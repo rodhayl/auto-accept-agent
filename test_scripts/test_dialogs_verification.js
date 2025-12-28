@@ -132,7 +132,8 @@ async function runTests() {
             }
         },
         extensionPath: __dirname,
-        extensionUri: {}
+        extensionUri: {},
+        extension: { id: 'test-extension-id' }
     };
 
     // --- TEST 1: Version Notification ---
@@ -197,7 +198,154 @@ async function runTests() {
     
     console.log('✅ PASS: Background mode dialog has correct options and no Cancel button.\n');
 
+    // --- TEST 4: Dialog Actions Verification ---
+    console.log('Test 4: Verifying Dialog Actions...');
+
+    // 4a. Verify "Open Prompt Mode" in Version Notification
+    console.log('   4a. Version Notification -> Open Prompt Mode');
+    mockVscode.window.showInformationMessage = async (msg, options, ...items) => "Open Prompt Mode"; // Simulate clicking "Open Prompt Mode"
+    mockSettingsPanel.lastCall = null;
+    
+    // Reset notification state to allow it to show again
+    context.globalState.data['auto-accept-version-7.0-notification-shown'] = false;
+    
+    // The previous attempt to wait for activate() failed because showVersionNotification is called without await
+    // inside activate(). 
+    // We will call the function logic directly via activate, but we need to ensure the promise chain resolves.
+    
+    // Let's modify the mock to resolve immediately but track the call
+    let resolveDialog;
+    const dialogPromise = new Promise(r => resolveDialog = r);
+    
+    mockVscode.window.showInformationMessage = async (msg, options, ...items) => {
+        resolveDialog();
+        return "Open Prompt Mode";
+    };
+    
+    await extension.activate(context); 
+    await dialogPromise; // Wait for dialog to be shown/resolved
+    await new Promise(resolve => setTimeout(resolve, 50)); // Wait for subsequent logic
+    
+    assert.strictEqual(mockSettingsPanel.lastCall, 'createOrShow', 'SettingsPanel.createOrShow should be called');
+
+    // 4b. Verify "Enable Background Mode" in Version Notification
+    console.log('   4b. Version Notification -> Enable Background Mode');
+    // Reset state to force notification again (though in real code it checks globalState)
+    context.globalState.data['auto-accept-version-7.0-notification-shown'] = false;
+    context.globalState.data['auto-accept-background-mode'] = false; // Start disabled
+    
+    mockVscode.window.showInformationMessage = async (msg, options, ...items) => "Enable Background Mode";
+    await extension.activate(context);
+    await new Promise(resolve => setTimeout(resolve, 100)); // Increase wait time
+    
+    // Check if background mode was enabled
+    assert.strictEqual(context.globalState.data['auto-accept-background-mode'], true, 'Background mode should be enabled');
+
+    // 4c. Verify "Open Prompt Mode" in Turn Off Warning
+    console.log('   4c. Turn Off Warning -> Open Prompt Mode');
+    mockVscode.window.showWarningMessage = async (msg, options, ...items) => "Open Prompt Mode";
+    mockSettingsPanel.lastCall = null;
+    
+    // Trigger toggle (which shows warning if enabled)
+    context.globalState.data['auto-accept-enabled-global'] = true;
+    await mockVscode.commands.registry['auto-accept.toggle']();
+    await new Promise(resolve => setTimeout(resolve, 100)); // Increase wait time
+    
+    assert.strictEqual(mockSettingsPanel.lastCall, 'createOrShow', 'SettingsPanel should be opened');
+    
+    console.log('✅ PASS: All dialog actions trigger correct logic.\n');
+
+    // --- TEST 5: ROI Stats Command ---
+    console.log('Test 5: Verifying ROI Stats Command...');
+    
+    // Calculate week start to match extension logic and prevent reset
+    const now = new Date();
+    const dayOfWeek = now.getDay(); // 0 = Sunday
+    const diff = now.getDate() - dayOfWeek;
+    const weekStart = new Date(now.setDate(diff));
+    weekStart.setHours(0, 0, 0, 0);
+    const expectedWeekStart = weekStart.getTime();
+
+    // Mock ROI stats in global state
+    context.globalState.data['auto-accept-roi-stats'] = {
+        weekStart: expectedWeekStart,
+        clicksThisWeek: 12, // 12 * 5s = 60s = 1 minute
+        blockedThisWeek: 2,
+        sessionsThisWeek: 1
+    };
+    
+    const roiStats = await mockVscode.commands.registry['auto-accept.getROIStats']();
+    console.log('   ROI Stats:', roiStats);
+    
+    assert.strictEqual(roiStats.clicksThisWeek, 12);
+    assert.strictEqual(roiStats.timeSavedMinutes, 1);
+    assert.strictEqual(roiStats.timeSavedFormatted, '1 minutes');
+    
+    console.log('✅ PASS: ROI Stats calculated correctly.\n');
+
+    // --- TEST 6: Banned Commands (Pro Feature) ---
+    console.log('Test 6: Verifying Banned Commands Update...');
+    
+    // Ensure Pro is enabled
+    context.globalState.data['auto-accept-isPro'] = true;
+    
+    const newBanned = ['rm -rf /important', 'format c:'];
+    await mockVscode.commands.registry['auto-accept.updateBannedCommands'](newBanned);
+    
+    const storedBanned = context.globalState.data['auto-accept-banned-commands'];
+    assert.deepStrictEqual(storedBanned, newBanned, 'Banned commands should be updated in global state');
+    
+    console.log('✅ PASS: Banned commands updated successfully.\n');
+
+    // --- TEST 7: Session Summary Notification ---
+    console.log('Test 7: Verifying Session Summary Notification...');
+    
+    // Reset warning mock to allow turning off
+    mockVscode.window.showWarningMessage = async (msg, options, ...items) => "Turn Off";
+
+    // Mock CDP session summary via prototype since instance is already created
+    mockCdpHandler.CDPHandler.prototype.getSessionSummary = async () => ({
+        clicks: 5,
+        terminalCommands: 2,
+        fileEdits: 1,
+        blocked: 0,
+        estimatedTimeSaved: 0.5
+    });
+    
+    // Reset notification mock
+    mockVscode.lastInfoMsg = null;
+    mockVscode.window.showInformationMessage = async (msg, options, ...items) => {
+        mockVscode.lastInfoMsg = { msg, items };
+        return items[0];
+    };
+    
+    // Turn OFF extension (triggers summary)
+    context.globalState.data['auto-accept-enabled-global'] = true;
+    // We need to set internal isEnabled to true first via activate or just assume toggle flips it.
+    // Since we called activate() earlier, isEnabled should be true from Test 1/2?
+    // Actually handleToggle toggles the internal variable.
+    // Let's force it to be ON first.
+    // But we can't easily set the internal `isEnabled` variable of extension.js from here.
+    // We have to rely on `toggle` logic.
+    // If it's currently OFF (from Test 2), we toggle ON, then OFF.
+    
+    // Let's toggle ON first
+    await mockVscode.commands.registry['auto-accept.toggle'](); // ON
+    
+    // Now toggle OFF to trigger summary
+    await mockVscode.commands.registry['auto-accept.toggle'](); // OFF (triggers summary)
+    
+    // Wait for async summary
+    await new Promise(resolve => setTimeout(resolve, 50));
+    
+    const summaryCall = mockVscode.lastInfoMsg;
+    assert.ok(summaryCall, 'Session summary should be shown when turning off');
+    assert.ok(summaryCall.msg.includes('5 actions handled'), 'Summary should mention click count');
+    
+    console.log('✅ PASS: Session summary notification shown.\n');
+
     console.log('🎉 ALL TESTS PASSED!');
+    process.exit(0);
 }
 
 runTests().catch(e => {

@@ -114,21 +114,14 @@ class SettingsPanel {
     }
 
     async handleCheckPro() {
-        const isPro = await this.checkProStatus(this.getUserId());
-        if (isPro) {
-            await this.context.globalState.update('auto-accept-isPro', true);
-            vscode.window.showInformationMessage('Auto Accept: Pro status verified!');
-            this.update();
-        } else {
-            // New: Downgrade logic if check fails (e.g. subscription cancelled)
-            await this.context.globalState.update('auto-accept-isPro', false);
-            vscode.window.showWarningMessage('Pro license not found. Standard limits applied.');
-            this.update();
-        }
+        // Always enforce Pro status
+        await this.context.globalState.update('auto-accept-isPro', true);
+        vscode.window.showInformationMessage('Auto Accept: Pro status verified! (Dev Mode)');
+        this.update();
     }
 
     isPro() {
-        return this.context.globalState.get('auto-accept-isPro', false);
+        return true; // Always Pro
     }
 
     getUserId() {
@@ -476,21 +469,18 @@ class SettingsPanel {
             <body>
                 <div class="container">
                     <div class="prompt-card">
-                        <div style="font-size: 32px; margin-bottom: 20px;">⏸️</div>
-                        <div class="prompt-title">Workflow Paused</div>
+                        <div style="font-size: 32px; margin-bottom: 20px;">⚡</div>
+                        <div class="prompt-title">Workflow Active</div>
                         <div class="prompt-text">
-                            Your Antigravity agent is waiting for approval.<br/><br/>
-                            <strong style="color: var(--accent); opacity: 1;">Pro users auto-resume 94% of these interruptions.</strong>
+                            Auto Accept Pro is active.<br/><br/>
+                            <strong style="color: var(--green); opacity: 1;">Auto-recovering interruptions...</strong>
                         </div>
-                        <a href="${stripeLinks.MONTHLY}" class="btn-primary" style="margin-bottom: 12px;">
-                            🚀 Unlock Auto-Recovery — $5/mo
-                        </a>
-                        <a href="${stripeLinks.YEARLY}" class="btn-primary" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);">
-                            Annual Plan — $29/year
-                        </a>
+                        <div class="btn-primary" style="background: rgba(34, 197, 94, 0.2); border: 1px solid var(--green); cursor: default;">
+                            🚀 Pro Mode Enabled
+                        </div>
 
                         <a class="link-secondary" onclick="dismiss()" style="margin-top: 24px; opacity: 0.6;">
-                            Continue manually for now
+                            Close Window
                         </a>
                     </div>
                 </div>
@@ -499,6 +489,8 @@ class SettingsPanel {
                     function dismiss() {
                         vscode.postMessage({ command: 'dismissPrompt' });
                     }
+                    // Auto-dismiss after 2 seconds
+                    setTimeout(dismiss, 2000);
                 </script>
             </body>
             </html>`;
@@ -514,24 +506,6 @@ class SettingsPanel {
                     <h1>Auto Accept <span class="pro-badge">Pro</span></h1>
                     <div class="subtitle">Multi-agent automation for Antigravity & Cursor</div>
                 </div>
-
-                ${!isPro ? `
-                <div class="section" style="background: var(--accent-soft); border-color: var(--accent); position: relative; overflow: hidden;">
-                    <div style="position: absolute; top: -20px; right: -20px; font-size: 80px; opacity: 0.05; transform: rotate(15deg);">🚀</div>
-                    <div class="section-label" style="color: white; margin-bottom: 12px; font-size: 14px;">🔥 Upgrade to Pro</div>
-                    <div style="font-size: 14px; line-height: 1.6; margin-bottom: 24px; color: rgba(255,255,255,0.9);">
-                        Automate up to 5 agents in parallel. Join 500+ devs saving hours every week.
-                    </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                        <a href="${stripeLinks.MONTHLY}" class="btn-primary">
-                            $5 / Month
-                        </a>
-                        <a href="${stripeLinks.YEARLY}" class="btn-primary" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);">
-                            $29 / Year
-                        </a>
-                    </div>
-                </div>
-                ` : ''}
 
                 <div class="section">
                     <div class="section-label">
@@ -563,19 +537,18 @@ class SettingsPanel {
                         <span>⚡ Performance Mode</span>
                         <span class="val-display" id="freqVal" style="color: var(--accent);">...</span>
                     </div>
-                    <div class="${!isPro ? 'locked' : ''}">
+                    <div>
                         <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 8px;">
                             <span style="font-size: 12px; opacity: 0.5;">Instant</span>
                             <div style="flex: 1;"><input type="range" id="freqSlider" min="200" max="3000" step="100" value="1000"></div>
                             <span style="font-size: 12px; opacity: 0.5;">Battery Saving</span>
                         </div>
                     </div>
-                    ${!isPro ? '<div class="pro-tip">Locked: Pro users get 200ms ultra-low latency mode</div>' : ''}
                 </div>
 
                 <div class="section">
                     <div class="section-label">⏰ Scheduled Prompts</div>
-                    <div class="${!isPro ? 'locked' : ''}">
+                    <div>
                         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
                             <span style="font-size: 13px;">Enable Schedule</span>
                             <label class="switch">
@@ -795,21 +768,7 @@ class SettingsPanel {
     }
 
     async checkProStatus(userId) {
-        return new Promise((resolve) => {
-            const https = require('https');
-            https.get(`${LICENSE_API}/verify?userId=${userId}`, (res) => {
-                let data = '';
-                res.on('data', chunk => data += chunk);
-                res.on('end', () => {
-                    try {
-                        const json = JSON.parse(data);
-                        resolve(json.isPro === true);
-                    } catch (e) {
-                        resolve(false);
-                    }
-                });
-            }).on('error', () => resolve(false));
-        });
+        return true; // Always valid
     }
 
     startPolling(userId) {

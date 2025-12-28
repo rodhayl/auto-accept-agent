@@ -3,12 +3,8 @@
     "displayName": "Auto Accept Agent",
     "description": "Auto Accept Agent: Automated Cursor and Antigravity workflow with Pro recovery tools.",
     "version": "7.1.2-david",
-    "publisher": "MunKhin",
+    "publisher": "rulfe",
     "icon": "media/icon.png",
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/MunKhin/auto-accept-agent"
-    },
     "categories": [
         "Machine Learning",
         "Other"
