@@ -22,8 +22,7 @@
         "test": "node test/integration-test.js",
         "compile": "esbuild extension.js --bundle --outfile=dist/extension.js --external:vscode --platform=node --format=cjs",
         "vscode:prepublish": "npm run compile",
-        "package": "npx vsce package",
-        "postinstall": "node ./node_modules/vscode/bin/install"
+        "package": "npx vsce package"
     },
     "engines": {
         "vscode": "^1.75.0"
@@ -46,7 +45,36 @@
                 "command": "auto-accept.openSettings",
                 "title": "Auto Accept: Settings & Pro"
             }
-        ]
+        ],
+        "configuration": {
+            "title": "Auto Accept",
+            "properties": {
+                "auto-accept.schedule.enabled": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Enable scheduled prompts."
+                },
+                "auto-accept.schedule.mode": {
+                    "type": "string",
+                    "enum": [
+                        "interval",
+                        "daily"
+                    ],
+                    "default": "interval",
+                    "description": "Mode for scheduled prompts: 'interval' (every X minutes) or 'daily' (at specific time)."
+                },
+                "auto-accept.schedule.value": {
+                    "type": "string",
+                    "default": "30",
+                    "description": "Value for schedule: Minutes for 'interval' mode (e.g. '30') or HH:MM for 'daily' mode (e.g. '17:00')."
+                },
+                "auto-accept.schedule.prompt": {
+                    "type": "string",
+                    "default": "Status report please",
+                    "description": "The prompt text to send."
+                }
+            }
+        }
     },
     "dependencies": {
         "ws": "^8.13.0"

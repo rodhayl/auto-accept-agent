@@ -911,6 +911,70 @@
         Analytics.setFocusState(isFocused, log);
     };
 
+    // --- Send Prompt (CDP) ---
+    window.__autoAcceptSendPrompt = function (text) {
+        log(`[Prompt] Received request to send: "${text}"`);
+        
+        // Strategy 1: Find typical chat input boxes
+        const selectors = [
+            'textarea[placeholder*="Ask"]', 
+            'textarea[placeholder*="Type"]', 
+            'div[contenteditable="true"]', 
+            'div.full-input-box',
+            'textarea'
+        ];
+        
+        let inputBox = null;
+        for (const sel of selectors) {
+            const els = queryAll(sel);
+            if (els.length > 0) {
+                // Prefer visible ones
+                inputBox = els.find(el => isElementVisible(el)) || els[0];
+                if (inputBox) break;
+            }
+        }
+
+        if (!inputBox) {
+            log('[Prompt] No input box found.');
+            return;
+        }
+
+        log('[Prompt] Found input box, simulating typing...');
+        
+        // Focus and set value
+        inputBox.focus();
+        
+        // Handle React/contenteditable
+        if (inputBox.tagName === 'TEXTAREA') {
+            const nativeTextAreaValueSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, "value").set;
+            nativeTextAreaValueSetter.call(inputBox, text);
+            inputBox.dispatchEvent(new Event('input', { bubbles: true }));
+        } else {
+            inputBox.innerText = text; // for contenteditable
+            inputBox.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+
+        // Trigger 'enter' or find send button
+        setTimeout(() => {
+            log('[Prompt] Attempting to send...');
+            // Try Enter key first
+            inputBox.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true }));
+            
+            // Or look for send button
+            setTimeout(() => {
+                const sendSelectors = ['button[aria-label*="Send"]', 'button[title*="Send"]', 'div[class*="send-button"]'];
+                for (const sel of sendSelectors) {
+                    const btn = queryAll(sel).find(el => isElementVisible(el));
+                    if (btn) {
+                        log('[Prompt] Clicking send button');
+                        btn.click();
+                        break;
+                    }
+                }
+            }, 100);
+        }, 100);
+    };
+
     window.__autoAcceptStart = function (config) {
         try {
             const ide = (config.ide || 'cursor').toLowerCase();
