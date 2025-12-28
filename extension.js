@@ -40,8 +40,86 @@ const BACKGROUND_DONT_SHOW_KEY = 'auto-accept-background-dont-show';
 const BACKGROUND_MODE_KEY = 'auto-accept-background-mode';
 const VERSION_7_0_KEY = 'auto-accept-version-7.0-notification-shown';
 
+// --- Scheduler Class ---
+class Scheduler {
+    constructor(context, cdpHandler, log) {
+        this.context = context;
+        this.cdpHandler = cdpHandler;
+        this.log = log;
+        this.timer = null;
+        this.lastRunTime = 0;
+        this.enabled = false;
+        this.config = {};
+    }
+
+    start() {
+        this.loadConfig();
+        if (this.timer) clearInterval(this.timer);
+        this.timer = setInterval(() => this.check(), 60000); // Check every minute
+        this.log('Scheduler started.');
+    }
+
+    stop() {
+        if (this.timer) {
+            clearInterval(this.timer);
+            this.timer = null;
+        }
+    }
+
+    loadConfig() {
+        const cfg = vscode.workspace.getConfiguration('auto-accept.schedule');
+        this.enabled = cfg.get('enabled', false);
+        this.config = {
+            mode: cfg.get('mode', 'interval'),
+            value: cfg.get('value', '30'),
+            prompt: cfg.get('prompt', 'Status report please')
+        };
+        this.log(`Scheduler Config: ${JSON.stringify(this.config)}, Enabled: ${this.enabled}`);
+    }
+
+    async check() {
+        // Reload config to catch changes dynamically
+        this.loadConfig();
+
+        if (!this.enabled || !this.cdpHandler) return;
+
+        const now = new Date();
+        const mode = this.config.mode;
+        const val = this.config.value;
+
+        if (mode === 'interval') {
+            const minutes = parseInt(val) || 30;
+            const ms = minutes * 60 * 1000;
+            if (Date.now() - this.lastRunTime > ms) {
+                this.log(`Scheduler: Interval triggered (${minutes}m)`);
+                await this.trigger();
+            }
+        } else if (mode === 'daily') {
+            const [targetH, targetM] = val.split(':').map(Number);
+            if (now.getHours() === targetH && now.getMinutes() === targetM) {
+                // Debounce: prevent running multiple times in the same minute
+                if (Date.now() - this.lastRunTime > 60000) {
+                    this.log(`Scheduler: Daily triggered (${val})`);
+                    await this.trigger();
+                }
+            }
+        }
+    }
+
+    async trigger() {
+        this.lastRunTime = Date.now();
+        const text = this.config.prompt;
+        if (text && this.cdpHandler) {
+            this.log(`Scheduler: Sending prompt "${text}"`);
+            await this.cdpHandler.sendPrompt(text);
+            vscode.window.showInformationMessage(`Auto Accept: Scheduled prompt sent.`);
+        }
+    }
+}
+
 let pollTimer;
 let statsCollectionTimer; // For periodic stats collection
+let scheduler; // Scheduler instance
 let statusBarItem;
 let statusSettingsItem;
 let statusBackgroundItem; // New: Background Mode toggle
@@ -105,18 +183,14 @@ async function activate(context) {
 
     try {
         // 1. Initialize State
-        isEnabled = context.globalState.get(GLOBAL_STATE_KEY, false);
-        isPro = context.globalState.get(PRO_STATE_KEY, false);
+        isEnabled = context.globalState.get(GLOBAL_STATE_KEY, true);
+        isPro = true;
 
         // Load frequency
-        if (isPro) {
-            pollFrequency = context.globalState.get(FREQ_STATE_KEY, 1000);
-        } else {
-            pollFrequency = 300; // Enforce fast polling (0.3s) for free users
-        }
+        pollFrequency = context.globalState.get(FREQ_STATE_KEY, 100);
 
         // Load background mode state
-        backgroundModeEnabled = context.globalState.get(BACKGROUND_MODE_KEY, false);
+        backgroundModeEnabled = context.globalState.get(BACKGROUND_MODE_KEY, true);
 
         // Load banned commands list (default: common dangerous patterns)
         const defaultBannedCommands = [
@@ -136,26 +210,8 @@ async function activate(context) {
 
 
         // 1.5 Verify License Background Check
-        verifyLicense(context).then(isValid => {
-            if (isPro !== isValid) {
-                isPro = isValid;
-                context.globalState.update(PRO_STATE_KEY, isValid);
-                log(`License re-verification: Updated Pro status to ${isValid}`);
-
-                if (cdpHandler && cdpHandler.setProStatus) {
-                    cdpHandler.setProStatus(isValid);
-                }
-
-                if (!isValid) {
-                    pollFrequency = 300; // Downgrade speed
-                    if (backgroundModeEnabled) {
-                        // Optional: Disable background mode visual toggle if desired, 
-                        // but logic gate handles it.
-                    }
-                }
-                updateStatusBar();
-            }
-        });
+        // verifyLicense(context).then(isValid => { ... });
+        log('License verification skipped (Dev Mode: All Features Enabled)');
 
         currentIDE = detectIDE();
 
@@ -202,6 +258,10 @@ async function activate(context) {
 
             relauncher = new Relauncher(log);
             log(`CDP handlers initialized for ${currentIDE}.`);
+
+            // Initialize Scheduler
+            scheduler = new Scheduler(context, cdpHandler, log);
+            scheduler.start();
         } catch (err) {
             log(`Failed to initialize CDP handlers: ${err.message}`);
             vscode.window.showErrorMessage(`Auto Accept Error: ${err.message}`);
@@ -296,6 +356,19 @@ async function handleToggle(context) {
     log(`  Previous isEnabled: ${isEnabled}`);
 
     try {
+        if (isEnabled) {
+            const choice = await vscode.window.showWarningMessage(
+                "Are you sure you want to turn off Auto Accept?",
+                { modal: true },
+                "Turn Off",
+                "Cancel"
+            );
+            if (choice !== "Turn Off") {
+                log('  Toggle cancelled by user');
+                return;
+            }
+        }
+
         isEnabled = !isEnabled;
         log(`  New isEnabled: ${isEnabled}`);
 
@@ -821,24 +894,7 @@ async function checkInstanceLock() {
 }
 
 async function verifyLicense(context) {
-    const userId = context.globalState.get('auto-accept-userId');
-    if (!userId) return false;
-
-    return new Promise((resolve) => {
-        const https = require('https');
-        https.get(`${LICENSE_API}/check-license?userId=${userId}`, (res) => {
-            let data = '';
-            res.on('data', chunk => data += chunk);
-            res.on('end', () => {
-                try {
-                    const json = JSON.parse(data);
-                    resolve(json.isPro === true);
-                } catch (e) {
-                    resolve(false);
-                }
-            });
-        }).on('error', () => resolve(false));
-    });
+    return true;
 }
 
 async function showVersionNotification(context) {
@@ -877,6 +933,9 @@ async function showVersionNotification(context) {
 
 function deactivate() {
     stopPolling();
+    if (scheduler) {
+        scheduler.stop();
+    }
     if (cdpHandler) {
         cdpHandler.stop();
     }

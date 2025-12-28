@@ -298,6 +298,27 @@ class CDPHandler {
         return total;
     }
 
+    async sendPrompt(text) {
+        if (!text) return;
+        this.log(`Sending prompt to all pages: "${text}"`);
+
+        for (const [pageId] of this.connections) {
+            try {
+                await this.sendCommand(pageId, 'Runtime.evaluate', {
+                    expression: `(function(){ 
+                        if(typeof window !== "undefined" && window.__autoAcceptSendPrompt) {
+                            window.__autoAcceptSendPrompt(${JSON.stringify(text)});
+                            return "sent";
+                        }
+                        return "not_found";
+                    })()`
+                });
+            } catch (e) {
+                this.log(`Failed to send prompt to ${pageId}: ${e.message}`);
+            }
+        }
+    }
+
     // Push focus state from extension to browser (more reliable than browser-side detection)
     async setFocusState(isFocused) {
         for (const [pageId] of this.connections) {

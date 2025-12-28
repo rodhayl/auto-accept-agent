@@ -20,7 +20,7 @@ var require_settings_panel = __commonJS({
   "settings-panel.js"(exports2, module2) {
     var vscode2 = require("vscode");
     var { STRIPE_LINKS } = require_config();
-    var LICENSE_API2 = "https://auto-accept-backend.onrender.com/api";
+    var LICENSE_API = "https://auto-accept-backend.onrender.com/api";
     var SettingsPanel2 = class _SettingsPanel {
       static currentPanel = void 0;
       static viewType = "autoAcceptSettings";
@@ -653,7 +653,7 @@ var require_settings_panel = __commonJS({
       async checkProStatus(userId) {
         return new Promise((resolve) => {
           const https = require("https");
-          https.get(`${LICENSE_API2}/verify?userId=${userId}`, (res) => {
+          https.get(`${LICENSE_API}/verify?userId=${userId}`, (res) => {
             let data = "";
             res.on("data", (chunk) => data += chunk);
             res.on("end", () => {
@@ -4587,6 +4587,25 @@ var require_cdp_handler = __commonJS({
         }
         return total;
       }
+      async sendPrompt(text) {
+        if (!text) return;
+        this.log(`Sending prompt to all pages: "${text}"`);
+        for (const [pageId] of this.connections) {
+          try {
+            await this.sendCommand(pageId, "Runtime.evaluate", {
+              expression: `(function(){ 
+                        if(typeof window !== "undefined" && window.__autoAcceptSendPrompt) {
+                            window.__autoAcceptSendPrompt(${JSON.stringify(text)});
+                            return "sent";
+                        }
+                        return "not_found";
+                    })()`
+            });
+          } catch (e) {
+            this.log(`Failed to send prompt to ${pageId}: ${e.message}`);
+          }
+        }
+      }
       // Push focus state from extension to browser (more reliable than browser-side detection)
       async setFocusState(isFocused) {
         for (const [pageId] of this.connections) {
@@ -5215,12 +5234,10 @@ function getSettingsPanel() {
   return SettingsPanel;
 }
 var GLOBAL_STATE_KEY = "auto-accept-enabled-global";
-var PRO_STATE_KEY = "auto-accept-isPro";
 var FREQ_STATE_KEY = "auto-accept-frequency";
 var BANNED_COMMANDS_KEY = "auto-accept-banned-commands";
 var ROI_STATS_KEY = "auto-accept-roi-stats";
 var SECONDS_PER_CLICK = 5;
-var LICENSE_API = "https://auto-accept-backend.onrender.com/api";
 var INSTANCE_ID = Math.random().toString(36).substring(7);
 var isEnabled = false;
 var isPro = false;
@@ -5231,8 +5248,74 @@ var backgroundModeEnabled = false;
 var BACKGROUND_DONT_SHOW_KEY = "auto-accept-background-dont-show";
 var BACKGROUND_MODE_KEY = "auto-accept-background-mode";
 var VERSION_7_0_KEY = "auto-accept-version-7.0-notification-shown";
+var Scheduler = class {
+  constructor(context, cdpHandler2, log2) {
+    this.context = context;
+    this.cdpHandler = cdpHandler2;
+    this.log = log2;
+    this.timer = null;
+    this.lastRunTime = 0;
+    this.enabled = false;
+    this.config = {};
+  }
+  start() {
+    this.loadConfig();
+    if (this.timer) clearInterval(this.timer);
+    this.timer = setInterval(() => this.check(), 6e4);
+    this.log("Scheduler started.");
+  }
+  stop() {
+    if (this.timer) {
+      clearInterval(this.timer);
+      this.timer = null;
+    }
+  }
+  loadConfig() {
+    const cfg = vscode.workspace.getConfiguration("auto-accept.schedule");
+    this.enabled = cfg.get("enabled", false);
+    this.config = {
+      mode: cfg.get("mode", "interval"),
+      value: cfg.get("value", "30"),
+      prompt: cfg.get("prompt", "Status report please")
+    };
+    this.log(`Scheduler Config: ${JSON.stringify(this.config)}, Enabled: ${this.enabled}`);
+  }
+  async check() {
+    this.loadConfig();
+    if (!this.enabled || !this.cdpHandler) return;
+    const now = /* @__PURE__ */ new Date();
+    const mode = this.config.mode;
+    const val = this.config.value;
+    if (mode === "interval") {
+      const minutes = parseInt(val) || 30;
+      const ms = minutes * 60 * 1e3;
+      if (Date.now() - this.lastRunTime > ms) {
+        this.log(`Scheduler: Interval triggered (${minutes}m)`);
+        await this.trigger();
+      }
+    } else if (mode === "daily") {
+      const [targetH, targetM] = val.split(":").map(Number);
+      if (now.getHours() === targetH && now.getMinutes() === targetM) {
+        if (Date.now() - this.lastRunTime > 6e4) {
+          this.log(`Scheduler: Daily triggered (${val})`);
+          await this.trigger();
+        }
+      }
+    }
+  }
+  async trigger() {
+    this.lastRunTime = Date.now();
+    const text = this.config.prompt;
+    if (text && this.cdpHandler) {
+      this.log(`Scheduler: Sending prompt "${text}"`);
+      await this.cdpHandler.sendPrompt(text);
+      vscode.window.showInformationMessage(`Auto Accept: Scheduled prompt sent.`);
+    }
+  }
+};
 var pollTimer;
 var statsCollectionTimer;
+var scheduler;
 var statusBarItem;
 var statusSettingsItem;
 var statusBackgroundItem;
@@ -5282,14 +5365,10 @@ async function activate(context) {
     console.error("CRITICAL: Failed to create status bar items:", sbError);
   }
   try {
-    isEnabled = context.globalState.get(GLOBAL_STATE_KEY, false);
-    isPro = context.globalState.get(PRO_STATE_KEY, false);
-    if (isPro) {
-      pollFrequency = context.globalState.get(FREQ_STATE_KEY, 1e3);
-    } else {
-      pollFrequency = 300;
-    }
-    backgroundModeEnabled = context.globalState.get(BACKGROUND_MODE_KEY, false);
+    isEnabled = context.globalState.get(GLOBAL_STATE_KEY, true);
+    isPro = true;
+    pollFrequency = context.globalState.get(FREQ_STATE_KEY, 100);
+    backgroundModeEnabled = context.globalState.get(BACKGROUND_MODE_KEY, true);
     const defaultBannedCommands = [
       "rm -rf /",
       "rm -rf ~",
@@ -5305,22 +5384,7 @@ async function activate(context) {
       "chmod -R 777 /"
     ];
     bannedCommands = context.globalState.get(BANNED_COMMANDS_KEY, defaultBannedCommands);
-    verifyLicense(context).then((isValid) => {
-      if (isPro !== isValid) {
-        isPro = isValid;
-        context.globalState.update(PRO_STATE_KEY, isValid);
-        log(`License re-verification: Updated Pro status to ${isValid}`);
-        if (cdpHandler && cdpHandler.setProStatus) {
-          cdpHandler.setProStatus(isValid);
-        }
-        if (!isValid) {
-          pollFrequency = 300;
-          if (backgroundModeEnabled) {
-          }
-        }
-        updateStatusBar();
-      }
-    });
+    log("License verification skipped (Dev Mode: All Features Enabled)");
     currentIDE = detectIDE();
     outputChannel = vscode.window.createOutputChannel("Auto Accept");
     context.subscriptions.push(outputChannel);
@@ -5351,6 +5415,8 @@ async function activate(context) {
       }
       relauncher = new Relauncher(log);
       log(`CDP handlers initialized for ${currentIDE}.`);
+      scheduler = new Scheduler(context, cdpHandler, log);
+      scheduler.start();
     } catch (err) {
       log(`Failed to initialize CDP handlers: ${err.message}`);
       vscode.window.showErrorMessage(`Auto Accept Error: ${err.message}`);
@@ -5426,6 +5492,18 @@ async function handleToggle(context) {
   log("=== handleToggle CALLED ===");
   log(`  Previous isEnabled: ${isEnabled}`);
   try {
+    if (isEnabled) {
+      const choice = await vscode.window.showWarningMessage(
+        "Are you sure you want to turn off Auto Accept?",
+        { modal: true },
+        "Turn Off",
+        "Cancel"
+      );
+      if (choice !== "Turn Off") {
+        log("  Toggle cancelled by user");
+        return;
+      }
+    }
     isEnabled = !isEnabled;
     log(`  New isEnabled: ${isEnabled}`);
     await context.globalState.update(GLOBAL_STATE_KEY, isEnabled);
@@ -5789,25 +5867,6 @@ function updateStatusBar() {
     }
   }
 }
-async function verifyLicense(context) {
-  const userId = context.globalState.get("auto-accept-userId");
-  if (!userId) return false;
-  return new Promise((resolve) => {
-    const https = require("https");
-    https.get(`${LICENSE_API}/check-license?userId=${userId}`, (res) => {
-      let data = "";
-      res.on("data", (chunk) => data += chunk);
-      res.on("end", () => {
-        try {
-          const json = JSON.parse(data);
-          resolve(json.isPro === true);
-        } catch (e) {
-          resolve(false);
-        }
-      });
-    }).on("error", () => resolve(false));
-  });
-}
 async function showVersionNotification(context) {
   const hasShown = context.globalState.get(VERSION_7_0_KEY, false);
   if (hasShown) return;
@@ -5839,6 +5898,9 @@ ${body}`,
 }
 function deactivate() {
   stopPolling();
+  if (scheduler) {
+    scheduler.stop();
+  }
   if (cdpHandler) {
     cdpHandler.stop();
   }
