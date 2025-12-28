@@ -361,8 +361,19 @@ async function handleToggle(context) {
                 "Are you sure you want to turn off Auto Accept?",
                 { modal: true },
                 "Turn Off",
-                "Cancel"
+                "Open Prompt Mode",
+                "View Dashboard"
             );
+            if (choice === "Open Prompt Mode") {
+                const panel = getSettingsPanel();
+                if (panel) panel.createOrShow(context.extensionUri, context, 'prompt');
+                return;
+            }
+            if (choice === "View Dashboard") {
+                const panel = getSettingsPanel();
+                if (panel) panel.createOrShow(context.extensionUri, context);
+                return;
+            }
             if (choice !== "Turn Off") {
                 log('  Toggle cancelled by user');
                 return;
@@ -477,8 +488,7 @@ async function handleBackgroundToggle(context) {
             'You might see tabs change quickly while it works.',
             { modal: true },
             'Enable',
-            "Don't Show Again & Enable",
-            'Cancel'
+            "Don't Show Again & Enable"
         );
 
         if (choice === 'Cancel' || !choice) {
@@ -922,12 +932,19 @@ async function showVersionNotification(context) {
         `${title}\n\n${body}`,
         { modal: true },
         btnGotIt,
-        btnDashboard
+        btnDashboard,
+        "Open Prompt Mode",
+        "Enable Background Mode"
     );
 
     if (selection === btnDashboard) {
         const panel = getSettingsPanel();
         if (panel) panel.createOrShow(context.extensionUri, context);
+    } else if (selection === "Open Prompt Mode") {
+        const panel = getSettingsPanel();
+        if (panel) panel.createOrShow(context.extensionUri, context, 'prompt');
+    } else if (selection === "Enable Background Mode") {
+        await handleBackgroundToggle(context);
     }
 }
 

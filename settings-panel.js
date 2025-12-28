@@ -74,6 +74,19 @@ class SettingsPanel {
                     case 'getBannedCommands':
                         this.sendBannedCommands();
                         break;
+                    case 'updateSchedule':
+                        if (this.isPro()) {
+                            const config = vscode.workspace.getConfiguration('auto-accept.schedule');
+                            await config.update('enabled', message.enabled, vscode.ConfigurationTarget.Global);
+                            await config.update('mode', message.mode, vscode.ConfigurationTarget.Global);
+                            await config.update('value', message.value, vscode.ConfigurationTarget.Global);
+                            await config.update('prompt', message.prompt, vscode.ConfigurationTarget.Global);
+                            vscode.window.showInformationMessage('Schedule updated successfully');
+                        }
+                        break;
+                    case 'getSchedule':
+                        this.sendSchedule();
+                        break;
                     case 'upgrade':
                         // Existing upgrade logic (maybe from Settings mode)
                         // For prompt mode, links are direct <a> tags usually, but if we need logic:
@@ -194,11 +207,25 @@ class SettingsPanel {
         });
     }
 
+    sendSchedule() {
+        const config = vscode.workspace.getConfiguration('auto-accept.schedule');
+        this.panel.webview.postMessage({
+            command: 'updateSchedule',
+            schedule: {
+                enabled: config.get('enabled'),
+                mode: config.get('mode'),
+                value: config.get('value'),
+                prompt: config.get('prompt')
+            }
+        });
+    }
+
     update() {
         this.panel.webview.html = this.getHtmlContent();
         setTimeout(() => {
             this.sendStats();
             this.sendROIStats();
+            this.sendSchedule();
         }, 100);
     }
 
@@ -432,6 +459,14 @@ class SettingsPanel {
             }
             .prompt-title { font-size: 20px; font-weight: 800; margin-bottom: 12px; letter-spacing: -0.5px; }
             .prompt-text { font-size: 15px; color: var(--fg-dim); line-height: 1.6; margin-bottom: 24px; }
+            
+            /* Toggle Switch */
+            .switch { position: relative; display: inline-block; width: 40px; height: 20px; }
+            .switch input { opacity: 0; width: 0; height: 0; }
+            .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.1); transition: .4s; border-radius: 20px; }
+            .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 2px; bottom: 2px; background-color: white; transition: .4s; border-radius: 50%; }
+            input:checked + .slider { background-color: var(--accent); }
+            input:checked + .slider:before { transform: translateX(20px); }
         `;
 
         if (isPrompt) {
@@ -539,6 +574,43 @@ class SettingsPanel {
                 </div>
 
                 <div class="section">
+                    <div class="section-label">⏰ Scheduled Prompts</div>
+                    <div class="${!isPro ? 'locked' : ''}">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+                            <span style="font-size: 13px;">Enable Schedule</span>
+                            <label class="switch">
+                                <input type="checkbox" id="scheduleEnabled">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                        
+                        <div id="scheduleControls" style="opacity: 0.5; pointer-events: none; transition: opacity 0.3s;">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                                <div>
+                                    <label style="font-size: 11px; color: var(--fg-dim); display: block; margin-bottom: 4px;">Mode</label>
+                                    <select id="scheduleMode" style="width: 100%; background: rgba(0,0,0,0.3); border: 1px solid var(--border); color: var(--fg); padding: 8px; border-radius: 6px;">
+                                        <option value="interval">Interval (Every X min)</option>
+                                        <option value="daily">Daily (At HH:MM)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="font-size: 11px; color: var(--fg-dim); display: block; margin-bottom: 4px;">Value</label>
+                                    <input type="text" id="scheduleValue" placeholder="30" style="width: 100%; background: rgba(0,0,0,0.3); border: 1px solid var(--border); color: var(--fg); padding: 8px; border-radius: 6px;">
+                                </div>
+                            </div>
+                            
+                            <div style="margin-bottom: 12px;">
+                                <label style="font-size: 11px; color: var(--fg-dim); display: block; margin-bottom: 4px;">Prompt Message</label>
+                                <textarea id="schedulePrompt" style="min-height: 60px;" placeholder="Status report please"></textarea>
+                            </div>
+
+                            <button id="saveScheduleBtn" class="btn-primary" style="width: 100%;">Save Schedule</button>
+                        </div>
+                    </div>
+                    ${!isPro ? '<div class="pro-tip">Locked: Pro users can schedule automated prompts</div>' : ''}
+                </div>
+
+                <div class="section">
                     <div class="section-label">🛡️ Safety Rules</div>
                     <div style="font-size: 13px; opacity: 0.6; margin-bottom: 16px; line-height: 1.5;">
                         Patterns that will NEVER be auto-accepted.
@@ -614,6 +686,41 @@ class SettingsPanel {
                     });
                 }
 
+                // --- Schedule Logic ---
+                const scheduleEnabled = document.getElementById('scheduleEnabled');
+                const scheduleControls = document.getElementById('scheduleControls');
+                const scheduleMode = document.getElementById('scheduleMode');
+                const scheduleValue = document.getElementById('scheduleValue');
+                const schedulePrompt = document.getElementById('schedulePrompt');
+                const saveScheduleBtn = document.getElementById('saveScheduleBtn');
+
+                if (scheduleEnabled) {
+                    scheduleEnabled.addEventListener('change', (e) => {
+                        const enabled = e.target.checked;
+                        scheduleControls.style.opacity = enabled ? '1' : '0.5';
+                        scheduleControls.style.pointerEvents = enabled ? 'auto' : 'none';
+                    });
+                }
+
+                if (saveScheduleBtn) {
+                    saveScheduleBtn.addEventListener('click', () => {
+                        vscode.postMessage({
+                            command: 'updateSchedule',
+                            enabled: scheduleEnabled.checked,
+                            mode: scheduleMode.value,
+                            value: scheduleValue.value,
+                            prompt: schedulePrompt.value
+                        });
+                        const originalText = saveScheduleBtn.innerText;
+                        saveScheduleBtn.innerText = '✓ Saved';
+                        saveScheduleBtn.style.background = 'var(--green)';
+                        setTimeout(() => {
+                            saveScheduleBtn.innerText = originalText;
+                            saveScheduleBtn.style.background = 'var(--accent)';
+                        }, 2000);
+                    });
+                }
+
                 // --- Fancy Count-up Animation ---
                 function animateCountUp(element, target, duration = 1200, suffix = '') {
                     const currentVal = parseInt(element.innerText.replace(/[^0-9]/g, '')) || 0;
@@ -654,11 +761,24 @@ class SettingsPanel {
                             bannedInput.value = msg.bannedCommands.join('\\n');
                         }
                     }
+                    if (msg.command === 'updateSchedule') {
+                        if (scheduleEnabled && msg.schedule) {
+                            scheduleEnabled.checked = msg.schedule.enabled;
+                            scheduleMode.value = msg.schedule.mode;
+                            scheduleValue.value = msg.schedule.value;
+                            schedulePrompt.value = msg.schedule.prompt;
+                            
+                            // Trigger visual update
+                            scheduleControls.style.opacity = msg.schedule.enabled ? '1' : '0.5';
+                            scheduleControls.style.pointerEvents = msg.schedule.enabled ? 'auto' : 'none';
+                        }
+                    }
                 });
 
                 // Initial load
                 refreshStats();
                 vscode.postMessage({ command: 'getBannedCommands' });
+                vscode.postMessage({ command: 'getSchedule' });
             </script>
         </body>
         </html>`;
