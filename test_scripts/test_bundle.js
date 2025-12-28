@@ -9,20 +9,215 @@
     // Guard: Bail out immediately if not in a browser context (e.g., service worker)
     if (typeof window === 'undefined') return;
 
-    // --- 0. INITIALIZATION & STATE ---
-    window.__autoAcceptState = window.__autoAcceptState || {
-        isRunning: false,
-        tabNames: [],
-        completionStatus: {},
-        sessionID: 0,
-        currentMode: null,
-        startTimes: {}
+    // ============================================================
+    // ANALYTICS MODULE (Embedded)
+    // Clean, modular analytics with separated concerns.
+    // See: main_scripts/analytics/ for standalone module files
+    // ============================================================
+    const Analytics = (function () {
+        // --- Constants ---
+        const TERMINAL_KEYWORDS = ['run', 'execute', 'command', 'terminal'];
+        const SECONDS_PER_CLICK = 5;
+        const TIME_VARIANCE = 0.2;
+
+        const ActionType = {
+            FILE_EDIT: 'file_edit',
+            TERMINAL_COMMAND: 'terminal_command'
+        };
+
+        // --- State Management ---
+        function createDefaultStats() {
+            return {
+                clicksThisSession: 0,
+                blockedThisSession: 0,
+                sessionStartTime: null,
+                fileEditsThisSession: 0,
+                terminalCommandsThisSession: 0,
+                actionsWhileAway: 0,
+                isWindowFocused: true,
+                lastConversationUrl: null,
+                lastConversationStats: null
+            };
+        }
+
+        function getStats() {
+            return window.__autoAcceptState?.stats || createDefaultStats();
+        }
+
+        function getStatsMutable() {
+            return window.__autoAcceptState.stats;
+        }
+
+        // --- Click Tracking ---
+        function categorizeClick(buttonText) {
+            const text = (buttonText || '').toLowerCase();
+            for (const keyword of TERMINAL_KEYWORDS) {
+                if (text.includes(keyword)) return ActionType.TERMINAL_COMMAND;
+            }
+            return ActionType.FILE_EDIT;
+        }
+
+        function trackClick(buttonText, log) {
+            const stats = getStatsMutable();
+            stats.clicksThisSession++;
+            log(`[Stats] Click tracked. Total: ${stats.clicksThisSession}`);
+
+            const category = categorizeClick(buttonText);
+            if (category === ActionType.TERMINAL_COMMAND) {
+                stats.terminalCommandsThisSession++;
+                log(`[Stats] Terminal command. Total: ${stats.terminalCommandsThisSession}`);
+            } else {
+                stats.fileEditsThisSession++;
+                log(`[Stats] File edit. Total: ${stats.fileEditsThisSession}`);
+            }
+
+            let isAway = false;
+            if (!stats.isWindowFocused) {
+                stats.actionsWhileAway++;
+                isAway = true;
+                log(`[Stats] Away action. Total away: ${stats.actionsWhileAway}`);
+            }
+
+            return { category, isAway, totalClicks: stats.clicksThisSession };
+        }
+
+        function trackBlocked(log) {
+            const stats = getStatsMutable();
+            stats.blockedThisSession++;
+            log(`[Stats] Blocked. Total: ${stats.blockedThisSession}`);
+        }
+
+        // --- ROI Reporting ---
+        function collectROI(log) {
+            const stats = getStatsMutable();
+            const collected = {
+                clicks: stats.clicksThisSession || 0,
+                blocked: stats.blockedThisSession || 0,
+                sessionStart: stats.sessionStartTime
+            };
+            log(`[ROI] Collected: ${collected.clicks} clicks, ${collected.blocked} blocked`);
+            stats.clicksThisSession = 0;
+            stats.blockedThisSession = 0;
+            stats.sessionStartTime = Date.now();
+            return collected;
+        }
+
+        // --- Session Summary ---
+        function getSessionSummary() {
+            const stats = getStats();
+            const clicks = stats.clicksThisSession || 0;
+            const baseSecs = clicks * SECONDS_PER_CLICK;
+            const minMins = Math.max(1, Math.floor((baseSecs * (1 - TIME_VARIANCE)) / 60));
+            const maxMins = Math.ceil((baseSecs * (1 + TIME_VARIANCE)) / 60);
+
+            return {
+                clicks,
+                fileEdits: stats.fileEditsThisSession || 0,
+                terminalCommands: stats.terminalCommandsThisSession || 0,
+                blocked: stats.blockedThisSession || 0,
+                estimatedTimeSaved: clicks > 0 ? `${minMins}–${maxMins} minutes` : null
+            };
+        }
+
+        // --- Away Actions ---
+        function consumeAwayActions(log) {
+            const stats = getStatsMutable();
+            const count = stats.actionsWhileAway || 0;
+            log(`[Away] Consuming away actions: ${count}`);
+            stats.actionsWhileAway = 0;
+            return count;
+        }
+
+        function isUserAway() {
+            return !getStats().isWindowFocused;
+        }
+
+        // --- Focus Management ---
+        // NOTE: Browser-side focus events are UNRELIABLE in webview contexts.
+        // The VS Code extension pushes the authoritative focus state via __autoAcceptSetFocusState.
+        // We only keep a minimal initializer here that defaults to focused=true.
+
+        function initializeFocusState(log) {
+            const state = window.__autoAcceptState;
+            if (state && state.stats) {
+                // Default to focused (assume user is present) - extension will correct this
+                state.stats.isWindowFocused = true;
+                log('[Focus] Initialized (awaiting extension sync)');
+            }
+        }
+
+        // --- Initialization ---
+        function initialize(log) {
+            if (!window.__autoAcceptState) {
+                window.__autoAcceptState = {
+                    isRunning: false,
+                    tabNames: [],
+                    completionStatus: {},
+                    sessionID: 0,
+                    currentMode: null,
+                    startTimes: {},
+                    bannedCommands: [],
+                    isPro: false,
+                    stats: createDefaultStats()
+                };
+                log('[Analytics] State initialized');
+            } else if (!window.__autoAcceptState.stats) {
+                window.__autoAcceptState.stats = createDefaultStats();
+                log('[Analytics] Stats added to existing state');
+            } else {
+                const s = window.__autoAcceptState.stats;
+                if (s.actionsWhileAway === undefined) s.actionsWhileAway = 0;
+                if (s.isWindowFocused === undefined) s.isWindowFocused = true;
+                if (s.fileEditsThisSession === undefined) s.fileEditsThisSession = 0;
+                if (s.terminalCommandsThisSession === undefined) s.terminalCommandsThisSession = 0;
+            }
+
+            initializeFocusState(log);
+
+            if (!window.__autoAcceptState.stats.sessionStartTime) {
+                window.__autoAcceptState.stats.sessionStartTime = Date.now();
+            }
+
+            log('[Analytics] Initialized');
+        }
+
+        // Set focus state (called from extension via CDP)
+        function setFocusState(isFocused, log) {
+            const state = window.__autoAcceptState;
+            if (!state || !state.stats) return;
+
+            const wasAway = !state.stats.isWindowFocused;
+            state.stats.isWindowFocused = isFocused;
+
+            if (log) {
+                log(`[Focus] Extension sync: focused=${isFocused}, wasAway=${wasAway}`);
+            }
+        }
+
+        // Public API
+        return {
+            initialize,
+            trackClick,
+            trackBlocked,
+            categorizeClick,
+            ActionType,
+            collectROI,
+            getSessionSummary,
+            consumeAwayActions,
+            isUserAway,
+            getStats,
+            setFocusState
+        };
+    })();
+
+    // --- LOGGING ---
+    const log = (msg, isSuccess = false) => {
+        // Simple log for CDP interception
+        console.log(`[AutoAccept] ${msg}`);
     };
 
-    const log = (msg, isSuccess = false) => {
-        const color = isSuccess ? "#00ff00" : "#3b82f6";
-        console.log(`%c[AutoAccept] ${msg}`, `color: ${color}; font-weight: bold;`);
-    };
+    // Initialize Analytics
+    Analytics.initialize(log);
 
     // --- 1. UTILS ---
     const getDocuments = (root = document) => {
@@ -52,8 +247,23 @@
         return (text || '').trim().replace(/\s*\d+[smh]$/, '').trim();
     };
 
+    // Helper to deduplicate tab names by appending (2), (3), etc.
+    const deduplicateNames = (names) => {
+        const counts = {};
+        return names.map(name => {
+            if (counts[name] === undefined) {
+                counts[name] = 1;
+                return name;
+            } else {
+                counts[name]++;
+                return `${name} (${counts[name]})`;
+            }
+        });
+    };
+
     const updateTabNames = (tabs) => {
-        const tabNames = Array.from(tabs).map(tab => stripTimeSuffix(tab.textContent));
+        const rawNames = Array.from(tabs).map(tab => stripTimeSuffix(tab.textContent));
+        const tabNames = deduplicateNames(rawNames);
 
         if (JSON.stringify(window.__autoAcceptState.tabNames) !== JSON.stringify(tabNames)) {
             log(`updateTabNames: Detected ${tabNames.length} tabs: ${tabNames.join(', ')}`);
@@ -162,8 +372,7 @@
             return;
         }
 
-        log(`[Overlay] updateOverlay: tabs=${state.tabNames?.length || 0}, completions=${JSON.stringify(state.completionStatus || {})}`);
-
+        log(`[Overlay] updateOverlay call: tabNames count=${state.tabNames?.length || 0}`);
         const newNames = state.tabNames || [];
 
         // Handle waiting state
@@ -195,10 +404,13 @@
         newNames.forEach(name => {
             const status = state.completionStatus[name]; // undefined, 'working', or 'done'
             const isDone = status === 'done';
-            const isWorking = status === 'working';
-            const statusClass = isDone ? 'done' : (isWorking ? 'working' : '');
-            const statusText = isDone ? 'DONE' : (isWorking ? 'WORKING' : 'WAITING');
-            const progressWidth = isDone ? '100%' : (isWorking ? '60%' : '20%');
+
+            // Simplified State Logic:
+            // 1. Completed (Green)
+            // 2. In Progress (Purple) - Default for everything else
+            const statusClass = isDone ? 'done' : 'working';
+            const statusText = isDone ? 'COMPLETED' : 'IN PROGRESS';
+            const progressWidth = isDone ? '100%' : '66%';
 
             let slot = container.querySelector(`.aab-slot[data-name="${name}"]`);
 
@@ -255,35 +467,263 @@
         }
     }
 
-    // --- 3. CLICKING LOGIC ---
+    // --- 3. BANNED COMMAND DETECTION ---
+    /**
+     * Traverses the parent containers and their siblings to find the command text being executed.
+     * Based on Antigravity DOM structure: the command is in a PRE/CODE block that's a sibling
+     * of the button's parent/grandparent container.
+     * 
+     * DOM Structure (Antigravity):
+     *   <div> (grandparent: flex w-full...)
+     *     <p>Run command?</p>
+     *     <div> (parent: ml-auto flex...)
+     *       <button>Reject</button>
+     *       <button>Accept</button>  <-- we start here
+     *     </div>
+     *   </div>
+     *   
+     * The command text is in a PRE block that's a previous sibling of the grandparent.
+     */
+    function findNearbyCommandText(el) {
+        const commandSelectors = ['pre', 'code', 'pre code'];
+        let commandText = '';
+
+        // Strategy 1: Walk up to find parent containers, then search their previous siblings
+        // This matches the actual Antigravity DOM where PRE blocks are siblings of the button's ancestor
+        let container = el.parentElement;
+        let depth = 0;
+        const maxDepth = 10; // Walk up to 10 levels
+
+        while (container && depth < maxDepth) {
+            // Search previous siblings of this container for PRE/CODE blocks
+            let sibling = container.previousElementSibling;
+            let siblingCount = 0;
+
+            while (sibling && siblingCount < 5) {
+                // Check if sibling itself is a PRE/CODE
+                if (sibling.tagName === 'PRE' || sibling.tagName === 'CODE') {
+                    const text = sibling.textContent.trim();
+                    if (text.length > 0) {
+                        commandText += ' ' + text;
+                        log(`[BannedCmd] Found <${sibling.tagName}> sibling at depth ${depth}: "${text.substring(0, 100)}..."`);
+                    }
+                }
+
+                // Check children of sibling for PRE/CODE
+                for (const selector of commandSelectors) {
+                    const codeElements = sibling.querySelectorAll(selector);
+                    for (const codeEl of codeElements) {
+                        if (codeEl && codeEl.textContent) {
+                            const text = codeEl.textContent.trim();
+                            if (text.length > 0 && text.length < 5000) {
+                                commandText += ' ' + text;
+                                log(`[BannedCmd] Found <${selector}> in sibling at depth ${depth}: "${text.substring(0, 100)}..."`);
+                            }
+                        }
+                    }
+                }
+
+                sibling = sibling.previousElementSibling;
+                siblingCount++;
+            }
+
+            // If we found command text, we're done
+            if (commandText.length > 10) {
+                break;
+            }
+
+            container = container.parentElement;
+            depth++;
+        }
+
+        // Strategy 2: Fallback - check immediate button siblings
+        if (commandText.length === 0) {
+            let btnSibling = el.previousElementSibling;
+            let count = 0;
+            while (btnSibling && count < 3) {
+                for (const selector of commandSelectors) {
+                    const codeElements = btnSibling.querySelectorAll ? btnSibling.querySelectorAll(selector) : [];
+                    for (const codeEl of codeElements) {
+                        if (codeEl && codeEl.textContent) {
+                            commandText += ' ' + codeEl.textContent.trim();
+                        }
+                    }
+                }
+                btnSibling = btnSibling.previousElementSibling;
+                count++;
+            }
+        }
+
+        // Strategy 3: Check aria-label and title attributes
+        if (el.getAttribute('aria-label')) {
+            commandText += ' ' + el.getAttribute('aria-label');
+        }
+        if (el.getAttribute('title')) {
+            commandText += ' ' + el.getAttribute('title');
+        }
+
+        const result = commandText.trim().toLowerCase();
+        if (result.length > 0) {
+            log(`[BannedCmd] Extracted command text (${result.length} chars): "${result.substring(0, 150)}..."`);
+        }
+        return result;
+    }
+
+    /**
+     * Check if a command is banned based on user-defined patterns.
+     * Supports both literal substring matching and regex patterns.
+     * 
+     * Pattern format (line by line in settings):
+     *   - Plain text: matches as literal substring (case-insensitive)
+     *   - /pattern/: treated as regex (e.g., /rm\s+-rf/ matches "rm -rf")
+     * 
+     * @param {string} commandText - The extracted command text to check
+     * @returns {boolean} True if command matches any banned pattern
+     */
+    function isCommandBanned(commandText) {
+        const state = window.__autoAcceptState;
+        const bannedList = state.bannedCommands || [];
+
+        if (bannedList.length === 0) return false;
+        if (!commandText || commandText.length === 0) return false;
+
+        const lowerText = commandText.toLowerCase();
+
+        for (const banned of bannedList) {
+            const pattern = banned.trim();
+            if (!pattern || pattern.length === 0) continue;
+
+            try {
+                // Check if pattern is a regex (starts and ends with /)
+                if (pattern.startsWith('/') && pattern.lastIndexOf('/') > 0) {
+                    // Extract regex pattern and flags
+                    const lastSlash = pattern.lastIndexOf('/');
+                    const regexPattern = pattern.substring(1, lastSlash);
+                    const flags = pattern.substring(lastSlash + 1) || 'i'; // Default case-insensitive
+
+                    const regex = new RegExp(regexPattern, flags);
+                    if (regex.test(commandText)) {
+                        log(`[BANNED] Command blocked by regex: /${regexPattern}/${flags}`);
+                        Analytics.trackBlocked(log);
+                        return true;
+                    }
+                } else {
+                    // Plain text - literal substring match (case-insensitive)
+                    const lowerPattern = pattern.toLowerCase();
+                    if (lowerText.includes(lowerPattern)) {
+                        log(`[BANNED] Command blocked by pattern: "${pattern}"`);
+                        Analytics.trackBlocked(log);
+                        return true;
+                    }
+                }
+            } catch (e) {
+                // If regex is invalid, fall back to literal match
+                log(`[BANNED] Invalid regex pattern "${pattern}", using literal match: ${e.message}`);
+                if (lowerText.includes(pattern.toLowerCase())) {
+                    log(`[BANNED] Command blocked by pattern (fallback): "${pattern}"`);
+                    Analytics.trackBlocked(log);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    // --- 4. CLICKING LOGIC ---
     function isAcceptButton(el) {
         const text = (el.textContent || "").trim().toLowerCase();
         if (text.length === 0 || text.length > 50) return false;
-        const patterns = ['accept', 'run', 'retry', 'apply', 'execute'];
+        const patterns = ['accept', 'run', 'retry', 'apply', 'execute', 'confirm', 'allow once', 'allow'];
         const rejects = ['skip', 'reject', 'cancel', 'close', 'refine'];
         if (rejects.some(r => text.includes(r))) return false;
         if (!patterns.some(p => text.includes(p))) return false;
+
+        // Check if this is a command execution button by looking for "run command" or similar
+        const isCommandButton = text.includes('run command') || text.includes('execute') || text.includes('run');
+
+        // If it's a command button, check if the command is banned
+        if (isCommandButton) {
+            const nearbyText = findNearbyCommandText(el);
+            if (isCommandBanned(nearbyText)) {
+                log(`[BANNED] Skipping button: "${text}" - command is banned`);
+                return false;
+            }
+        }
 
         const style = window.getComputedStyle(el);
         const rect = el.getBoundingClientRect();
         return style.display !== 'none' && rect.width > 0 && style.pointerEvents !== 'none' && !el.disabled;
     }
 
-    function performClick(selectors) {
+    /**
+     * Check if an element is still visible in the DOM.
+     * @param {Element} el - Element to check
+     * @returns {boolean} True if element is visible
+     */
+    function isElementVisible(el) {
+        if (!el || !el.isConnected) return false;
+        const style = window.getComputedStyle(el);
+        const rect = el.getBoundingClientRect();
+        return style.display !== 'none' && rect.width > 0 && style.visibility !== 'hidden';
+    }
+
+    /**
+     * Wait for an element to disappear (removed from DOM or hidden).
+     * @param {Element} el - Element to watch
+     * @param {number} timeout - Max time to wait in ms
+     * @returns {Promise<boolean>} True if element disappeared
+     */
+    function waitForDisappear(el, timeout = 500) {
+        return new Promise(resolve => {
+            const startTime = Date.now();
+            const check = () => {
+                if (!isElementVisible(el)) {
+                    resolve(true);
+                } else if (Date.now() - startTime >= timeout) {
+                    resolve(false);
+                } else {
+                    requestAnimationFrame(check);
+                }
+            };
+            // Give a small initial delay for the click to register
+            setTimeout(check, 50);
+        });
+    }
+
+    async function performClick(selectors) {
         const found = [];
         selectors.forEach(s => queryAll(s).forEach(el => found.push(el)));
         let clicked = 0;
+        let verified = 0;
         const uniqueFound = [...new Set(found)];
-        // log(`performClick: Found ${ uniqueFound.length } potential buttons with selectors: ${ selectors.join(', ') } `);
 
-        uniqueFound.forEach(el => {
+        for (const el of uniqueFound) {
             if (isAcceptButton(el)) {
-                log(`Clicking: "${el.textContent.trim()}"`);
+                const buttonText = (el.textContent || "").trim();
+                log(`Clicking: "${buttonText}"`);
+
+                // Dispatch click
                 el.dispatchEvent(new MouseEvent('click', { view: window, bubbles: true, cancelable: true }));
                 clicked++;
+
+                // Wait for button to disappear (verification)
+                const disappeared = await waitForDisappear(el);
+
+                if (disappeared) {
+                    // Only count if button actually disappeared (action was successful)
+                    Analytics.trackClick(buttonText, log);
+                    verified++;
+                    log(`[Stats] Click verified (button disappeared)`);
+                } else {
+                    log(`[Stats] Click not verified (button still visible after 500ms)`);
+                }
             }
-        });
-        return clicked;
+        }
+
+        if (clicked > 0) {
+            log(`[Click] Attempted: ${clicked}, Verified: ${verified}`);
+        }
+        return verified;
     }
 
     // --- 4. POLL LOOPS ---
@@ -295,19 +735,38 @@
             cycle++;
             log(`[Loop] Cycle ${cycle}: Starting...`);
 
-            const clicked = performClick(['button', '[class*="button"]', '[class*="anysphere"]']);
+            const clicked = await performClick(['button', '[class*="button"]', '[class*="anysphere"]']);
             log(`[Loop] Cycle ${cycle}: Clicked ${clicked} buttons`);
 
             await new Promise(r => setTimeout(r, 800));
 
-            const tabs = queryAll('#workbench\\.parts\\.auxiliarybar ul[role="tablist"] li[role="tab"]');
-            log(`[Loop] Cycle ${cycle}: Found ${tabs.length} tabs`);
+            // Try multiple selectors for Cursor tabs
+            const tabSelectors = [
+                '#workbench\\.parts\\.auxiliarybar ul[role="tablist"] li[role="tab"]',
+                '.monaco-pane-view .monaco-list-row[role="listitem"]',
+                'div[role="tablist"] div[role="tab"]',
+                '.chat-session-item' // Potential future-proof selector
+            ];
+
+            let tabs = [];
+            for (const selector of tabSelectors) {
+                tabs = queryAll(selector);
+                if (tabs.length > 0) {
+                    log(`[Loop] Cycle ${cycle}: Found ${tabs.length} tabs using selector: ${selector}`);
+                    break;
+                }
+            }
+
+            if (tabs.length === 0) {
+                log(`[Loop] Cycle ${cycle}: No tabs found in any known locations.`);
+            }
 
             updateTabNames(tabs);
 
             if (tabs.length > 0) {
                 const targetTab = tabs[index % tabs.length];
-                log(`[Loop] Cycle ${cycle}: Clicking tab "${targetTab.textContent?.trim()}"`);
+                const tabLabel = targetTab.getAttribute('aria-label') || targetTab.textContent?.trim() || 'unnamed tab';
+                log(`[Loop] Cycle ${cycle}: Clicking tab "${tabLabel}"`);
                 targetTab.dispatchEvent(new MouseEvent('click', { view: window, bubbles: true, cancelable: true }));
                 index++;
             }
@@ -331,9 +790,25 @@
             cycle++;
             log(`[Loop] Cycle ${cycle}: Starting...`);
 
-            // Click accept/run buttons (Antigravity specific selectors)
-            const clicked = performClick(['.bg-ide-button-background']);
-            log(`[Loop] Cycle ${cycle}: Clicked ${clicked} accept buttons`);
+            // FIRST: Check for completion badges (Good/Bad) BEFORE clicking
+            const allSpans = queryAll('span');
+            const feedbackBadges = allSpans.filter(s => {
+                const t = s.textContent.trim();
+                return t === 'Good' || t === 'Bad';
+            });
+            const hasBadge = feedbackBadges.length > 0;
+
+            log(`[Loop] Cycle ${cycle}: Found ${feedbackBadges.length} Good/Bad badges`);
+
+            // Only click if there's NO completion badge (conversation is still working)
+            let clicked = 0;
+            if (!hasBadge) {
+                // Click accept/run buttons (Antigravity specific selectors)
+                clicked = await performClick(['.bg-ide-button-background']);
+                log(`[Loop] Cycle ${cycle}: Clicked ${clicked} accept buttons`);
+            } else {
+                log(`[Loop] Cycle ${cycle}: Skipping clicks - conversation is DONE (has badge)`);
+            }
 
             await new Promise(r => setTimeout(r, 800));
 
@@ -364,8 +839,8 @@
             await new Promise(r => setTimeout(r, 1500));
 
             // Check for completion badges (Good/Bad) after clicking
-            const allSpans = queryAll('span');
-            const feedbackTexts = allSpans
+            const allSpansAfter = queryAll('span');
+            const feedbackTexts = allSpansAfter
                 .filter(s => {
                     const t = s.textContent.trim();
                     return t === 'Good' || t === 'Bad';
@@ -393,11 +868,123 @@
     }
 
     // --- 5. LIFECYCLE API ---
+    // --- Update banned commands list ---
+    window.__autoAcceptUpdateBannedCommands = function (bannedList) {
+        const state = window.__autoAcceptState;
+        state.bannedCommands = Array.isArray(bannedList) ? bannedList : [];
+        log(`[Config] Updated banned commands list: ${state.bannedCommands.length} patterns`);
+        if (state.bannedCommands.length > 0) {
+            log(`[Config] Banned patterns: ${state.bannedCommands.join(', ')}`);
+        }
+    };
+
+    // --- Get current stats for ROI notification ---
+    window.__autoAcceptGetStats = function () {
+        const stats = Analytics.getStats();
+        return {
+            clicks: stats.clicksThisSession || 0,
+            blocked: stats.blockedThisSession || 0,
+            sessionStart: stats.sessionStartTime,
+            fileEdits: stats.fileEditsThisSession || 0,
+            terminalCommands: stats.terminalCommandsThisSession || 0,
+            actionsWhileAway: stats.actionsWhileAway || 0
+        };
+    };
+
+    // --- Reset stats (called when extension wants to collect and reset) ---
+    window.__autoAcceptResetStats = function () {
+        return Analytics.collectROI(log);
+    };
+
+    // --- Get session summary for notifications ---
+    window.__autoAcceptGetSessionSummary = function () {
+        return Analytics.getSessionSummary();
+    };
+
+    // --- Get and reset away actions count ---
+    window.__autoAcceptGetAwayActions = function () {
+        return Analytics.consumeAwayActions(log);
+    };
+
+    // --- Set focus state (called from extension - authoritative source) ---
+    window.__autoAcceptSetFocusState = function (isFocused) {
+        Analytics.setFocusState(isFocused, log);
+    };
+
+    // --- Send Prompt (CDP) ---
+    window.__autoAcceptSendPrompt = function (text) {
+        log(`[Prompt] Received request to send: "${text}"`);
+        
+        // Strategy 1: Find typical chat input boxes
+        const selectors = [
+            'textarea[placeholder*="Ask"]', 
+            'textarea[placeholder*="Type"]', 
+            'div[contenteditable="true"]', 
+            'div.full-input-box',
+            'textarea'
+        ];
+        
+        let inputBox = null;
+        for (const sel of selectors) {
+            const els = queryAll(sel);
+            if (els.length > 0) {
+                // Prefer visible ones
+                inputBox = els.find(el => isElementVisible(el)) || els[0];
+                if (inputBox) break;
+            }
+        }
+
+        if (!inputBox) {
+            log('[Prompt] No input box found.');
+            return;
+        }
+
+        log('[Prompt] Found input box, simulating typing...');
+        
+        // Focus and set value
+        inputBox.focus();
+        
+        // Handle React/contenteditable
+        if (inputBox.tagName === 'TEXTAREA') {
+            const nativeTextAreaValueSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, "value").set;
+            nativeTextAreaValueSetter.call(inputBox, text);
+            inputBox.dispatchEvent(new Event('input', { bubbles: true }));
+        } else {
+            inputBox.innerText = text; // for contenteditable
+            inputBox.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+
+        // Trigger 'enter' or find send button
+        setTimeout(() => {
+            log('[Prompt] Attempting to send...');
+            // Try Enter key first
+            inputBox.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true }));
+            
+            // Or look for send button
+            setTimeout(() => {
+                const sendSelectors = ['button[aria-label*="Send"]', 'button[title*="Send"]', 'div[class*="send-button"]'];
+                for (const sel of sendSelectors) {
+                    const btn = queryAll(sel).find(el => isElementVisible(el));
+                    if (btn) {
+                        log('[Prompt] Clicking send button');
+                        btn.click();
+                        break;
+                    }
+                }
+            }, 100);
+        }, 100);
+    };
+
     window.__autoAcceptStart = function (config) {
         try {
             const ide = (config.ide || 'cursor').toLowerCase();
             const isPro = config.isPro !== false;
             const isBG = config.isBackgroundMode === true;
+
+            // Update banned commands from config
+            if (config.bannedCommands) {
+                window.__autoAcceptUpdateBannedCommands(config.bannedCommands);
+            }
 
             log(`__autoAcceptStart called: ide=${ide}, isPro=${isPro}, isBG=${isBG}`);
 
@@ -420,6 +1007,11 @@
             state.isBackgroundMode = isBG;
             state.sessionID++;
             const sid = state.sessionID;
+
+            // Initialize session start time if not set (for stats tracking)
+            if (!state.stats.sessionStartTime) {
+                state.stats.sessionStartTime = Date.now();
+            }
 
             log(`Agent Loaded (IDE: ${ide}, BG: ${isBG}, isPro: ${isPro})`, true);
 

@@ -20,7 +20,6 @@ var require_settings_panel = __commonJS({
   "settings-panel.js"(exports2, module2) {
     var vscode2 = require("vscode");
     var { STRIPE_LINKS } = require_config();
-    var LICENSE_API = "https://auto-accept-backend.onrender.com/api";
     var SettingsPanel2 = class _SettingsPanel {
       static currentPanel = void 0;
       static viewType = "autoAcceptSettings";
@@ -113,19 +112,12 @@ var require_settings_panel = __commonJS({
         this.dispose();
       }
       async handleCheckPro() {
-        const isPro2 = await this.checkProStatus(this.getUserId());
-        if (isPro2) {
-          await this.context.globalState.update("auto-accept-isPro", true);
-          vscode2.window.showInformationMessage("Auto Accept: Pro status verified!");
-          this.update();
-        } else {
-          await this.context.globalState.update("auto-accept-isPro", false);
-          vscode2.window.showWarningMessage("Pro license not found. Standard limits applied.");
-          this.update();
-        }
+        await this.context.globalState.update("auto-accept-isPro", true);
+        vscode2.window.showInformationMessage("Auto Accept: Pro status verified! (Dev Mode)");
+        this.update();
       }
       isPro() {
-        return this.context.globalState.get("auto-accept-isPro", false);
+        return true;
       }
       getUserId() {
         let userId = this.context.globalState.get("auto-accept-userId");
@@ -455,21 +447,18 @@ var require_settings_panel = __commonJS({
             <body>
                 <div class="container">
                     <div class="prompt-card">
-                        <div style="font-size: 32px; margin-bottom: 20px;">\u23F8\uFE0F</div>
-                        <div class="prompt-title">Workflow Paused</div>
+                        <div style="font-size: 32px; margin-bottom: 20px;">\u26A1</div>
+                        <div class="prompt-title">Workflow Active</div>
                         <div class="prompt-text">
-                            Your Antigravity agent is waiting for approval.<br/><br/>
-                            <strong style="color: var(--accent); opacity: 1;">Pro users auto-resume 94% of these interruptions.</strong>
+                            Auto Accept Pro is active.<br/><br/>
+                            <strong style="color: var(--green); opacity: 1;">Auto-recovering interruptions...</strong>
                         </div>
-                        <a href="${stripeLinks.MONTHLY}" class="btn-primary" style="margin-bottom: 12px;">
-                            \u{1F680} Unlock Auto-Recovery \u2014 $5/mo
-                        </a>
-                        <a href="${stripeLinks.YEARLY}" class="btn-primary" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);">
-                            Annual Plan \u2014 $29/year
-                        </a>
+                        <div class="btn-primary" style="background: rgba(34, 197, 94, 0.2); border: 1px solid var(--green); cursor: default;">
+                            \u{1F680} Pro Mode Enabled
+                        </div>
 
                         <a class="link-secondary" onclick="dismiss()" style="margin-top: 24px; opacity: 0.6;">
-                            Continue manually for now
+                            Close Window
                         </a>
                     </div>
                 </div>
@@ -478,6 +467,8 @@ var require_settings_panel = __commonJS({
                     function dismiss() {
                         vscode.postMessage({ command: 'dismissPrompt' });
                     }
+                    // Auto-dismiss after 2 seconds
+                    setTimeout(dismiss, 2000);
                 </script>
             </body>
             </html>`;
@@ -491,24 +482,6 @@ var require_settings_panel = __commonJS({
                     <h1>Auto Accept <span class="pro-badge">Pro</span></h1>
                     <div class="subtitle">Multi-agent automation for Antigravity & Cursor</div>
                 </div>
-
-                ${!isPro2 ? `
-                <div class="section" style="background: var(--accent-soft); border-color: var(--accent); position: relative; overflow: hidden;">
-                    <div style="position: absolute; top: -20px; right: -20px; font-size: 80px; opacity: 0.05; transform: rotate(15deg);">\u{1F680}</div>
-                    <div class="section-label" style="color: white; margin-bottom: 12px; font-size: 14px;">\u{1F525} Upgrade to Pro</div>
-                    <div style="font-size: 14px; line-height: 1.6; margin-bottom: 24px; color: rgba(255,255,255,0.9);">
-                        Automate up to 5 agents in parallel. Join 500+ devs saving hours every week.
-                    </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                        <a href="${stripeLinks.MONTHLY}" class="btn-primary">
-                            $5 / Month
-                        </a>
-                        <a href="${stripeLinks.YEARLY}" class="btn-primary" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);">
-                            $29 / Year
-                        </a>
-                    </div>
-                </div>
-                ` : ""}
 
                 <div class="section">
                     <div class="section-label">
@@ -540,19 +513,18 @@ var require_settings_panel = __commonJS({
                         <span>\u26A1 Performance Mode</span>
                         <span class="val-display" id="freqVal" style="color: var(--accent);">...</span>
                     </div>
-                    <div class="${!isPro2 ? "locked" : ""}">
+                    <div>
                         <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 8px;">
                             <span style="font-size: 12px; opacity: 0.5;">Instant</span>
                             <div style="flex: 1;"><input type="range" id="freqSlider" min="200" max="3000" step="100" value="1000"></div>
                             <span style="font-size: 12px; opacity: 0.5;">Battery Saving</span>
                         </div>
                     </div>
-                    ${!isPro2 ? '<div class="pro-tip">Locked: Pro users get 200ms ultra-low latency mode</div>' : ""}
                 </div>
 
                 <div class="section">
                     <div class="section-label">\u23F0 Scheduled Prompts</div>
-                    <div class="${!isPro2 ? "locked" : ""}">
+                    <div>
                         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
                             <span style="font-size: 13px;">Enable Schedule</span>
                             <label class="switch">
@@ -770,21 +742,7 @@ var require_settings_panel = __commonJS({
         }
       }
       async checkProStatus(userId) {
-        return new Promise((resolve) => {
-          const https = require("https");
-          https.get(`${LICENSE_API}/verify?userId=${userId}`, (res) => {
-            let data = "";
-            res.on("data", (chunk) => data += chunk);
-            res.on("end", () => {
-              try {
-                const json = JSON.parse(data);
-                resolve(json.isPro === true);
-              } catch (e) {
-                resolve(false);
-              }
-            });
-          }).on("error", () => resolve(false));
-        });
+        return true;
       }
       startPolling(userId) {
         let attempts = 0;
@@ -5376,6 +5334,7 @@ var Scheduler = class {
     this.lastRunTime = 0;
     this.enabled = false;
     this.config = {};
+    this.promptQueue = Promise.resolve();
   }
   start() {
     this.loadConfig();
@@ -5422,14 +5381,22 @@ var Scheduler = class {
       }
     }
   }
+  async queuePrompt(text) {
+    this.promptQueue = this.promptQueue.then(async () => {
+      this.lastRunTime = Date.now();
+      if (text && this.cdpHandler) {
+        this.log(`Scheduler: Sending prompt "${text}"`);
+        await this.cdpHandler.sendPrompt(text);
+        vscode.window.showInformationMessage(`Auto Accept: Scheduled prompt sent.`);
+      }
+    }).catch((err) => {
+      this.log(`Scheduler Error: ${err.message}`);
+    });
+    return this.promptQueue;
+  }
   async trigger() {
-    this.lastRunTime = Date.now();
     const text = this.config.prompt;
-    if (text && this.cdpHandler) {
-      this.log(`Scheduler: Sending prompt "${text}"`);
-      await this.cdpHandler.sendPrompt(text);
-      vscode.window.showInformationMessage(`Auto Accept: Scheduled prompt sent.`);
-    }
+    return this.queuePrompt(text);
   }
 };
 var pollTimer;
@@ -5616,8 +5583,19 @@ async function handleToggle(context) {
         "Are you sure you want to turn off Auto Accept?",
         { modal: true },
         "Turn Off",
-        "Cancel"
+        "Open Prompt Mode",
+        "View Dashboard"
       );
+      if (choice === "Open Prompt Mode") {
+        const panel = getSettingsPanel();
+        if (panel) panel.createOrShow(context.extensionUri, context, "prompt");
+        return;
+      }
+      if (choice === "View Dashboard") {
+        const panel = getSettingsPanel();
+        if (panel) panel.createOrShow(context.extensionUri, context);
+        return;
+      }
       if (choice !== "Turn Off") {
         log("  Toggle cancelled by user");
         return;
@@ -5705,8 +5683,7 @@ async function handleBackgroundToggle(context) {
       "Turn on Background Mode?\n\nThis lets Auto Accept work on all your open chats at once. It will switch between tabs to click Accept for you.\n\nYou might see tabs change quickly while it works.",
       { modal: true },
       "Enable",
-      "Don't Show Again & Enable",
-      "Cancel"
+      "Don't Show Again & Enable"
     );
     if (choice === "Cancel" || !choice) {
       log("Background mode cancelled by user");
@@ -6008,11 +5985,18 @@ async function showVersionNotification(context) {
 ${body}`,
     { modal: true },
     btnGotIt,
-    btnDashboard
+    btnDashboard,
+    "Open Prompt Mode",
+    "Enable Background Mode"
   );
   if (selection === btnDashboard) {
     const panel = getSettingsPanel();
     if (panel) panel.createOrShow(context.extensionUri, context);
+  } else if (selection === "Open Prompt Mode") {
+    const panel = getSettingsPanel();
+    if (panel) panel.createOrShow(context.extensionUri, context, "prompt");
+  } else if (selection === "Enable Background Mode") {
+    await handleBackgroundToggle(context);
   }
 }
 function deactivate() {

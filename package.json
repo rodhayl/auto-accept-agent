@@ -5,10 +5,6 @@
     "version": "7.5.0",
     "publisher": "MunKhin",
     "icon": "media/icon.png",
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/MunKhin/auto-accept-agent"
-    },
     "categories": [
         "Machine Learning",
         "Other"

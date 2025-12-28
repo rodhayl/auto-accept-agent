@@ -50,6 +50,7 @@ class Scheduler {
         this.lastRunTime = 0;
         this.enabled = false;
         this.config = {};
+        this.promptQueue = Promise.resolve(); // Queue for prompt serialization
     }
 
     start() {
@@ -106,14 +107,25 @@ class Scheduler {
         }
     }
 
+    async queuePrompt(text) {
+        // Chain the new trigger to the end of the queue to ensure serialization
+        this.promptQueue = this.promptQueue.then(async () => {
+            this.lastRunTime = Date.now();
+            if (text && this.cdpHandler) {
+                this.log(`Scheduler: Sending prompt "${text}"`);
+                await this.cdpHandler.sendPrompt(text);
+                vscode.window.showInformationMessage(`Auto Accept: Scheduled prompt sent.`);
+            }
+        }).catch(err => {
+            this.log(`Scheduler Error: ${err.message}`);
+        });
+
+        return this.promptQueue;
+    }
+
     async trigger() {
-        this.lastRunTime = Date.now();
         const text = this.config.prompt;
-        if (text && this.cdpHandler) {
-            this.log(`Scheduler: Sending prompt "${text}"`);
-            await this.cdpHandler.sendPrompt(text);
-            vscode.window.showInformationMessage(`Auto Accept: Scheduled prompt sent.`);
-        }
+        return this.queuePrompt(text);
     }
 }
 
