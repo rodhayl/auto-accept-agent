@@ -1,5 +1,5 @@
 (function () {
-    console.log("%c[AutoAccept] AG Background (No Overlay) Test Initialized", "color: #00ff00; font-weight: bold;");
+    console.log("%c[Multi Purpose Agent] AG Background (No Overlay) Test Initialized", "color: #00ff00; font-weight: bold;");
 
     // --- Helpers (Mocking utils.js) ---
     const getDocuments = (root = document) => {
@@ -28,7 +28,7 @@
     const updateTabNames = (tabs) => {
         const tabNames = Array.from(tabs).map(tab => tab.textContent.trim());
         if (window.__autoAcceptState) window.__autoAcceptState.tabNames = tabNames;
-        console.log(`[AutoAccept] Tabs found: ${tabNames.length}`);
+        console.log(`[Multi Purpose Agent] Tabs found: ${tabNames.length}`);
     };
 
     // --- State Mock ---
@@ -73,7 +73,7 @@
         elements.forEach(el => {
             // Click if it matches patterns, OR if it's the specific "+" conversation button
             if (isAcceptButton(el) || selector.includes('tooltip')) {
-                console.log(`[AutoAccept] CLICKING: "${el.textContent.trim() || selector}"`);
+                console.log(`[Multi Purpose Agent] CLICKING: "${el.textContent.trim() || selector}"`);
                 el.click();
                 clicked = true;
             }
@@ -84,7 +84,7 @@
     // --- The Poll Runner ---
     window.testAGBackground = async function () {
         if (window.__autoAcceptState.isRunning) {
-            console.log("[AutoAccept] Stopping previous test session...");
+            console.log("[Multi Purpose Agent] Stopping previous test session...");
             window.__autoAcceptState.isRunning = false;
             await new Promise(r => setTimeout(r, 1000));
         }
@@ -94,10 +94,10 @@
         const sid = window.__autoAcceptState.sessionID;
         let currentTabIndex = 0;
 
-        console.log(`[AutoAccept] AG-BG Loop started (Session: ${sid})`);
+        console.log(`[Multi Purpose Agent] AG-BG Loop started (Session: ${sid})`);
 
         while (window.__autoAcceptState.isRunning && window.__autoAcceptState.sessionID === sid) {
-            console.log(`[AutoAccept] Cycle step. Active index: ${currentTabIndex}`);
+            console.log(`[Multi Purpose Agent] Cycle step. Active index: ${currentTabIndex}`);
 
             // 1. Click Accept/Retry
             [".bg-ide-button-background", "button"].forEach(t => click(t));
@@ -114,19 +114,19 @@
             if (tabs.length > 0) {
                 const nextIndex = currentTabIndex % tabs.length;
                 const tabToClick = tabs[nextIndex];
-                console.log(`[AutoAccept] Switching to tab ${nextIndex}: "${tabToClick.textContent.trim()}"`);
+                console.log(`[Multi Purpose Agent] Switching to tab ${nextIndex}: "${tabToClick.textContent.trim()}"`);
                 tabToClick.click();
                 currentTabIndex++;
             }
 
             await new Promise(r => setTimeout(r, 3000));
         }
-        console.log(`[AutoAccept] Session ${sid} exited.`);
+        console.log(`[Multi Purpose Agent] Session ${sid} exited.`);
     };
 
     window.stopAGBackground = () => {
         window.__autoAcceptState.isRunning = false;
-        console.log("[AutoAccept] Stop signal sent.");
+        console.log("[Multi Purpose Agent] Stop signal sent.");
     };
 
     console.log("Commands:");

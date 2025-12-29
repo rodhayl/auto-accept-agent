@@ -17,7 +17,7 @@ class Relauncher {
     constructor(logger = null) {
         this.platform = os.platform();
         this.logger = logger || console.log;
-        this.logFile = path.join(os.tmpdir(), 'auto_accept_relaunch.log');
+        this.logFile = path.join(os.tmpdir(), 'multi_purpose_agent_relaunch.log');
     }
 
     log(msg) {
@@ -401,7 +401,7 @@ try {
      * Read Windows shortcut properties
      */
     async _readWindowsShortcut(shortcutPath) {
-        const scriptPath = path.join(os.tmpdir(), 'auto_accept_read_shortcut.ps1');
+        const scriptPath = path.join(os.tmpdir(), 'multi_purpose_agent_read_shortcut.ps1');
 
         try {
             const psScript = `
@@ -563,6 +563,7 @@ open -a "${appBundle}" --args ${CDP_FLAG} "$@"
         return shortcuts;
     }
 
+
     async _modifyLinuxDesktop(desktopPath) {
         try {
             let content = fs.readFileSync(desktopPath, 'utf8');
@@ -672,7 +673,7 @@ open -a "${appBundle}" --args ${CDP_FLAG} "$@"
         }
 
         const batchContent = `@echo off
-REM Auto Accept - IDE Relaunch Script
+REM Multi Purpose Agent - IDE Relaunch Script
 timeout /t 5 /nobreak >nul
 ${commandLine}
 del "%~f0" & exit
@@ -913,7 +914,7 @@ exit 1
         this.log('Showing relaunch prompt');
 
         const choice = await vscode.window.showInformationMessage(
-            'Auto Accept requires a quick one-time setup to enable background mode. This will restart your IDE with necessary permissions.',
+            'Multi Purpose Agent requires a quick one-time setup to enable background mode. This will restart your IDE with necessary permissions.',
             { modal: false },
             'Setup & Restart',
             'Not Now'

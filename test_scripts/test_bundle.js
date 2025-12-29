@@ -35,6 +35,7 @@
                 terminalCommandsThisSession: 0,
                 actionsWhileAway: 0,
                 isWindowFocused: true,
+                lastUserActivityAt: Date.now(),
                 lastConversationUrl: null,
                 lastConversationStats: null
             };
@@ -129,7 +130,15 @@
         }
 
         function isUserAway() {
-            return !getStats().isWindowFocused;
+            const stats = getStats();
+            const now = Date.now();
+            const lastActivityAt = typeof stats.lastUserActivityAt === 'number' ? stats.lastUserActivityAt : 0;
+            const recentlyActive = now - lastActivityAt < 5000;
+            const docFocused = (typeof document !== 'undefined' && typeof document.hasFocus === 'function') ? document.hasFocus() : false;
+
+            if (recentlyActive || docFocused) return false;
+
+            return stats.isWindowFocused === false;
         }
 
         // --- Focus Management ---
@@ -170,6 +179,7 @@
                 if (s.isWindowFocused === undefined) s.isWindowFocused = true;
                 if (s.fileEditsThisSession === undefined) s.fileEditsThisSession = 0;
                 if (s.terminalCommandsThisSession === undefined) s.terminalCommandsThisSession = 0;
+                if (s.lastUserActivityAt === undefined) s.lastUserActivityAt = Date.now();
             }
 
             initializeFocusState(log);
@@ -188,9 +198,21 @@
 
             const wasAway = !state.stats.isWindowFocused;
             state.stats.isWindowFocused = isFocused;
+            if (isFocused) {
+                state.stats.lastUserActivityAt = Date.now();
+            }
 
             if (log) {
                 log(`[Focus] Extension sync: focused=${isFocused}, wasAway=${wasAway}`);
+            }
+        }
+
+        function markUserActivity() {
+            const state = window.__autoAcceptState;
+            if (!state || !state.stats) return;
+            state.stats.lastUserActivityAt = Date.now();
+            if (state.stats.isWindowFocused === false) {
+                state.stats.isWindowFocused = true;
             }
         }
 
@@ -206,18 +228,31 @@
             consumeAwayActions,
             isUserAway,
             getStats,
-            setFocusState
+            setFocusState,
+            markUserActivity
         };
     })();
 
     // --- LOGGING ---
     const log = (msg, isSuccess = false) => {
         // Simple log for CDP interception
-        console.log(`[AutoAccept] ${msg}`);
+        console.log(`[Multi Purpose Agent] ${msg}`);
     };
 
     // Initialize Analytics
     Analytics.initialize(log);
+
+    (function () {
+        const handler = () => {
+            try { Analytics.markUserActivity(); } catch (e) { }
+        };
+        const opts = { capture: true, passive: true };
+        try { window.addEventListener('mousedown', handler, opts); } catch (e) { }
+        try { window.addEventListener('keydown', handler, opts); } catch (e) { }
+        try { window.addEventListener('pointerdown', handler, opts); } catch (e) { }
+        try { window.addEventListener('touchstart', handler, opts); } catch (e) { }
+        try { window.addEventListener('wheel', handler, opts); } catch (e) { }
+    })();
 
     // --- 1. UTILS ---
     const getDocuments = (root = document) => {
@@ -285,7 +320,7 @@
     const OVERLAY_ID = '__autoAcceptBgOverlay';
     const STYLE_ID = '__autoAcceptBgStyles';
     const STYLES = `
-        #__autoAcceptBgOverlay { position: fixed; background: rgba(0, 0, 0, 0.98); z-index: 2147483647; font-family: sans-serif; color: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; pointer-events: none; opacity: 0; transition: opacity 0.3s; }
+        #__autoAcceptBgOverlay { position: fixed; background: rgba(0, 0, 0, 0); z-index: 2147483647; font-family: sans-serif; color: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; pointer-events: none; opacity: 0; transition: opacity 0.3s; }
         #__autoAcceptBgOverlay.visible { opacity: 1; }
         .aab-slot { margin-bottom: 12px; width: 80%; padding: 8px; background: rgba(255,255,255,0.05); border-radius: 4px; }
         .aab-header { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; }
@@ -336,7 +371,41 @@
         if (ide === 'antigravity') {
             panel = queryAll('#antigravity\\.agentPanel').find(p => p.offsetWidth > 50);
         } else {
-            panel = queryAll('#workbench\\.parts\\.auxiliarybar').find(p => p.offsetWidth > 50);
+            const containerSelectors = [
+                '#workbench\\.parts\\.auxiliarybar',
+                '#workbench\\.parts\\.sidebar',
+                '#workbench\\.parts\\.panel',
+                '#workbench\\.parts\\.editor',
+                '.monaco-workbench'
+            ];
+            const containerSelector = containerSelectors.join(',');
+
+            const inputBox = queryAll('div.full-input-box')[0];
+            if (inputBox) {
+                try {
+                    const container = inputBox.closest?.(containerSelector);
+                    if (container && container.offsetWidth > 50) panel = container;
+                } catch (e) { }
+            }
+
+            if (!panel) {
+                for (const sel of containerSelectors) {
+                    const candidates = queryAll(sel);
+                    for (const candidate of candidates) {
+                        try {
+                            if (candidate.offsetWidth > 50 && candidate.querySelector?.('div.full-input-box')) {
+                                panel = candidate;
+                                break;
+                            }
+                        } catch (e) { }
+                    }
+                    if (panel) break;
+                }
+            }
+
+            if (!panel) {
+                panel = queryAll('#workbench\\.parts\\.auxiliarybar').find(p => p.offsetWidth > 50);
+            }
         }
 
         if (panel) {
@@ -348,8 +417,9 @@
             sync();
             new ResizeObserver(sync).observe(panel);
         } else {
-            log('[Overlay] No panel found, using fullscreen');
-            Object.assign(overlay.style, { top: '0', left: '0', width: '100%', height: '100%' });
+            log('[Overlay] No panel found, skipping overlay creation');
+            overlay.remove();
+            return;
         }
 
         // Add initial waiting message
@@ -359,17 +429,25 @@
         waitingDiv.textContent = 'Scanning for conversations...';
         container.appendChild(waitingDiv);
 
-        requestAnimationFrame(() => overlay.classList.add('visible'));
+        const isAway = (Analytics && typeof Analytics.isUserAway === 'function') ? Analytics.isUserAway() : false;
+        if (isAway) requestAnimationFrame(() => overlay.classList.add('visible'));
     }
 
     // Called on each loop iteration to update content (never creates/destroys)
     function updateOverlay() {
         const state = window.__autoAcceptState;
         const container = document.getElementById('aab-c');
+        const overlay = document.getElementById(OVERLAY_ID);
+        const isAway = (Analytics && typeof Analytics.isUserAway === 'function') ? Analytics.isUserAway() : false;
 
         if (!container) {
             log('[Overlay] updateOverlay: No container found, skipping');
             return;
+        }
+
+        if (overlay) {
+            if (isAway) overlay.classList.add('visible');
+            else overlay.classList.remove('visible');
         }
 
         log(`[Overlay] updateOverlay call: tabNames count=${state.tabNames?.length || 0}`);
@@ -630,11 +708,101 @@
     }
 
     // --- 4. CLICKING LOGIC ---
+    function getInteractionRoots() {
+        const ide = (window.__autoAcceptState?.currentMode || 'cursor').toLowerCase();
+
+        const roots = [];
+        const addRoot = (el) => {
+            if (!el) return;
+            if (roots.includes(el)) return;
+            try {
+                if (el.offsetWidth <= 50 || el.offsetHeight <= 50) return;
+            } catch (e) { }
+            roots.push(el);
+        };
+
+        if (ide === 'antigravity') {
+            queryAll('#antigravity\\.agentPanel').forEach(addRoot);
+            return roots;
+        }
+
+        const containerSelectors = [
+            '#workbench\\.parts\\.auxiliarybar',
+            '#workbench\\.parts\\.sidebar',
+            '#workbench\\.parts\\.panel',
+            '#workbench\\.parts\\.editor',
+            '.monaco-workbench'
+        ];
+        const containerSelector = containerSelectors.join(',');
+
+        const inputBoxes = queryAll('div.full-input-box');
+        for (const inputBox of inputBoxes) {
+            try {
+                const container = inputBox.closest?.(containerSelector);
+                if (container) addRoot(container);
+            } catch (e) { }
+        }
+
+        if (roots.length === 0) {
+            for (const sel of containerSelectors) {
+                const els = queryAll(sel);
+                for (const el of els) {
+                    try {
+                        if (el.querySelector?.('div.full-input-box')) {
+                            addRoot(el);
+                        }
+                    } catch (e) { }
+                }
+                if (roots.length > 0) break;
+            }
+        }
+
+        if (roots.length === 0) {
+            queryAll('#workbench\\.parts\\.auxiliarybar').forEach(addRoot);
+        }
+
+        return roots;
+    }
+
+    function queryAllInInteractionRoots(selector) {
+        const roots = getInteractionRoots();
+        if (roots.length === 0) return [];
+        const results = [];
+        for (const root of roots) {
+            try {
+                results.push(...Array.from(root.querySelectorAll(selector)));
+            } catch (e) { }
+        }
+        return results;
+    }
+
+    function isInsideInteractionRoot(el) {
+        const roots = getInteractionRoots();
+        if (roots.length === 0) return true;
+
+        const ownerDoc = el?.ownerDocument;
+        const sameDocRoots = ownerDoc ? roots.filter(r => r && r.ownerDocument === ownerDoc) : [];
+        if (sameDocRoots.length === 0) return true;
+
+        for (const root of sameDocRoots) {
+            try {
+                if (root.contains(el)) return true;
+            } catch (e) { }
+        }
+        return false;
+    }
+
+    function isDisallowedButtonText(text) {
+        const t = (text || '').trim().toLowerCase();
+        if (!t) return false;
+        return t.includes('fix all remaining issues') || t === 'fix all' || t.includes('fix all remaining');
+    }
+
     function isAcceptButton(el) {
-        const text = (el.textContent || "").trim().toLowerCase();
-        if (text.length === 0 || text.length > 50) return false;
-        const patterns = ['accept', 'run', 'retry', 'apply', 'execute', 'confirm', 'allow once', 'allow'];
-        const rejects = ['skip', 'reject', 'cancel', 'close', 'refine'];
+        const text = ((el.textContent || el.getAttribute?.('aria-label') || el.getAttribute?.('title') || "") + '').trim().toLowerCase();
+        if (text.length === 0 || text.length > 160) return false;
+        const patterns = ['accept', 'run', 'retry', 'apply', 'execute', 'confirm', 'allow once', 'allow', 'continue', 'proceed', 'approve'];
+        const rejects = ['skip', 'reject', 'cancel', 'close', 'refine', 'deny', 'fix all remaining issues', 'fix all remaining', 'fix all'];
         if (rejects.some(r => text.includes(r))) return false;
         if (!patterns.some(p => text.includes(p))) return false;
 
@@ -653,6 +821,19 @@
         const style = window.getComputedStyle(el);
         const rect = el.getBoundingClientRect();
         return style.display !== 'none' && rect.width > 0 && style.pointerEvents !== 'none' && !el.disabled;
+    }
+
+    function matchesAcceptText(text) {
+        const t = (text || '').trim().toLowerCase();
+        if (t.length === 0) return false;
+        const patterns = ['accept', 'run', 'retry', 'apply', 'execute', 'confirm', 'allow once', 'allow', 'continue', 'proceed', 'approve'];
+        const rejects = ['skip', 'reject', 'cancel', 'close', 'refine', 'deny', 'fix all remaining issues', 'fix all remaining', 'fix all'];
+        if (rejects.some(r => t.includes(r))) return false;
+        return patterns.some(p => t.includes(p));
+    }
+
+    function getElementLabel(el) {
+        return ((el?.textContent || el?.getAttribute?.('aria-label') || el?.getAttribute?.('title') || '') + '').trim();
     }
 
     /**
@@ -690,32 +871,74 @@
         });
     }
 
+    function waitForClickEffect(el, beforeText, timeout = 1500) {
+        return new Promise(resolve => {
+            const startTime = Date.now();
+            const check = () => {
+                if (!isElementVisible(el)) return resolve(true);
+
+                const afterText = getElementLabel(el);
+                const ariaDisabled = (el.getAttribute?.('aria-disabled') || '').toLowerCase() === 'true';
+                if (el.disabled || ariaDisabled) return resolve(true);
+
+                if (beforeText && afterText && beforeText !== afterText && !matchesAcceptText(afterText)) return resolve(true);
+
+                const style = window.getComputedStyle(el);
+                if (style.pointerEvents === 'none') return resolve(true);
+
+                if (Date.now() - startTime >= timeout) return resolve(false);
+                requestAnimationFrame(check);
+            };
+            setTimeout(check, 50);
+        });
+    }
+
     async function performClick(selectors) {
         const found = [];
-        selectors.forEach(s => queryAll(s).forEach(el => found.push(el)));
+        selectors.forEach(s => queryAllInInteractionRoots(s).forEach(el => found.push(el)));
         let clicked = 0;
         let verified = 0;
         const uniqueFound = [...new Set(found)];
+        const clickedTargets = new Set();
+
+        if (uniqueFound.length === 0) return 0;
 
         for (const el of uniqueFound) {
             if (isAcceptButton(el)) {
-                const buttonText = (el.textContent || "").trim();
+                const target = el.closest ? (el.closest('button,[role="button"]') || el) : el;
+                if (clickedTargets.has(target)) continue;
+                if (!isInsideInteractionRoot(target)) continue;
+
+                const buttonText = getElementLabel(target);
+                if (isDisallowedButtonText(buttonText)) continue;
+
+                clickedTargets.add(target);
+
+                const beforeText = buttonText;
                 log(`Clicking: "${buttonText}"`);
 
-                // Dispatch click
-                el.dispatchEvent(new MouseEvent('click', { view: window, bubbles: true, cancelable: true }));
+                try { target.scrollIntoView?.({ block: 'center', inline: 'center' }); } catch (e) { }
+                try { target.click?.(); } catch (e) { }
+
+                try {
+                    const eventInit = { view: window, bubbles: true, cancelable: true };
+                    const pointerSupported = typeof PointerEvent !== 'undefined';
+                    if (pointerSupported) {
+                        target.dispatchEvent(new PointerEvent('pointerdown', eventInit));
+                        target.dispatchEvent(new PointerEvent('pointerup', eventInit));
+                    }
+                    target.dispatchEvent(new MouseEvent('mousedown', eventInit));
+                    target.dispatchEvent(new MouseEvent('mouseup', eventInit));
+                    target.dispatchEvent(new MouseEvent('click', eventInit));
+                } catch (e) { }
+
                 clicked++;
 
-                // Wait for button to disappear (verification)
-                const disappeared = await waitForDisappear(el);
-
-                if (disappeared) {
-                    // Only count if button actually disappeared (action was successful)
+                const effect = await waitForClickEffect(target, beforeText);
+                if (effect) {
                     Analytics.trackClick(buttonText, log);
                     verified++;
-                    log(`[Stats] Click verified (button disappeared)`);
-                } else {
-                    log(`[Stats] Click not verified (button still visible after 500ms)`);
+                    log(`[Stats] Click verified`);
                 }
             }
         }
@@ -735,22 +958,28 @@
             cycle++;
             log(`[Loop] Cycle ${cycle}: Starting...`);
 
-            const clicked = await performClick(['button', '[class*="button"]', '[class*="anysphere"]']);
+            const roots = getInteractionRoots();
+            if (roots.length === 0) {
+                await new Promise(r => setTimeout(r, 1500));
+                continue;
+            }
+
+            const clicked = await performClick(['button', 'div[role="button"]', '[aria-label*="Accept"]', '[aria-label*="Run"]', '[title*="Accept"]', '[title*="Run"]', '[class*="button"]', '[class*="anysphere"]']);
             log(`[Loop] Cycle ${cycle}: Clicked ${clicked} buttons`);
 
             await new Promise(r => setTimeout(r, 800));
 
-            // Try multiple selectors for Cursor tabs
+            const isAway = (Analytics && typeof Analytics.isUserAway === 'function') ? Analytics.isUserAway() : false;
+
             const tabSelectors = [
-                '#workbench\\.parts\\.auxiliarybar ul[role="tablist"] li[role="tab"]',
-                '.monaco-pane-view .monaco-list-row[role="listitem"]',
-                'div[role="tablist"] div[role="tab"]',
-                '.chat-session-item' // Potential future-proof selector
+                'ul[role="tablist"] li[role="tab"]',
+                '[role="tablist"] [role="tab"]',
+                '.chat-session-item'
             ];
 
             let tabs = [];
             for (const selector of tabSelectors) {
-                tabs = queryAll(selector);
+                tabs = queryAllInInteractionRoots(selector).filter(t => isElementVisible(t));
                 if (tabs.length > 0) {
                     log(`[Loop] Cycle ${cycle}: Found ${tabs.length} tabs using selector: ${selector}`);
                     break;
@@ -763,12 +992,14 @@
 
             updateTabNames(tabs);
 
-            if (tabs.length > 0) {
+            if (isAway && tabs.length > 0) {
                 const targetTab = tabs[index % tabs.length];
                 const tabLabel = targetTab.getAttribute('aria-label') || targetTab.textContent?.trim() || 'unnamed tab';
                 log(`[Loop] Cycle ${cycle}: Clicking tab "${tabLabel}"`);
                 targetTab.dispatchEvent(new MouseEvent('click', { view: window, bubbles: true, cancelable: true }));
                 index++;
+            } else if (!isAway) {
+                log(`[Loop] Cycle ${cycle}: User focused, skipping tab rotation`);
             }
 
             const state = window.__autoAcceptState;
@@ -790,8 +1021,17 @@
             cycle++;
             log(`[Loop] Cycle ${cycle}: Starting...`);
 
-            // FIRST: Check for completion badges (Good/Bad) BEFORE clicking
-            const allSpans = queryAll('span');
+            const roots = getInteractionRoots();
+            if (roots.length === 0) {
+                await new Promise(r => setTimeout(r, 1500));
+                continue;
+            }
+
+            const isAway = (Analytics && typeof Analytics.isUserAway === 'function') ? Analytics.isUserAway() : false;
+
+            // FIRST: Check for completion badges (Good/Bad) for logging, but DON'T block clicking
+            // The presence of an "Accept" button is the authoritative signal that action is needed.
+            const allSpans = queryAllInInteractionRoots('span');
             const feedbackBadges = allSpans.filter(s => {
                 const t = s.textContent.trim();
                 return t === 'Good' || t === 'Bad';
@@ -800,46 +1040,51 @@
 
             log(`[Loop] Cycle ${cycle}: Found ${feedbackBadges.length} Good/Bad badges`);
 
-            // Only click if there's NO completion badge (conversation is still working)
+            // Always try to click if buttons are present
             let clicked = 0;
-            if (!hasBadge) {
-                // Click accept/run buttons (Antigravity specific selectors)
-                clicked = await performClick(['.bg-ide-button-background']);
+            // Expanded selectors to be more robust against UI changes
+            clicked = await performClick(['.bg-ide-button-background', 'button', 'div[role="button"]', '[aria-label*="Accept"]', '[aria-label*="Run"]', '[title*="Accept"]', '[title*="Run"]', '[class*="button"]']);
+            
+            if (clicked > 0) {
                 log(`[Loop] Cycle ${cycle}: Clicked ${clicked} accept buttons`);
-            } else {
-                log(`[Loop] Cycle ${cycle}: Skipping clicks - conversation is DONE (has badge)`);
+            } else if (hasBadge) {
+                log(`[Loop] Cycle ${cycle}: No buttons found and conversation seems done (has badge)`);
             }
+
 
             await new Promise(r => setTimeout(r, 800));
 
-            // Optional: click New Tab button to cycle
-            const nt = queryAll("[data-tooltip-id='new-conversation-tooltip']")[0];
-            if (nt) {
-                log(`[Loop] Cycle ${cycle}: Clicking New Tab button`);
-                nt.click();
-            }
-            await new Promise(r => setTimeout(r, 1000));
-
-            // Re-query tabs after potential navigation
-            const tabsAfter = queryAll('button.grow');
-            log(`[Loop] Cycle ${cycle}: Found ${tabsAfter.length} tabs`);
-            updateTabNames(tabsAfter);
-
-            // Click next tab in rotation and check its completion
             let clickedTabName = null;
-            if (tabsAfter.length > 0) {
-                const targetTab = tabsAfter[index % tabsAfter.length];
-                clickedTabName = stripTimeSuffix(targetTab.textContent);
-                log(`[Loop] Cycle ${cycle}: Clicking tab "${clickedTabName}"`);
-                targetTab.dispatchEvent(new MouseEvent('click', { view: window, bubbles: true, cancelable: true }));
-                index++;
+            if (isAway) {
+                const nt = queryAllInInteractionRoots("[data-tooltip-id='new-conversation-tooltip']")[0];
+                if (nt) {
+                    log(`[Loop] Cycle ${cycle}: Clicking New Tab button`);
+                    nt.click();
+                }
+                await new Promise(r => setTimeout(r, 1000));
+
+                const tabsAfter = queryAllInInteractionRoots('button.grow');
+                log(`[Loop] Cycle ${cycle}: Found ${tabsAfter.length} tabs`);
+                updateTabNames(tabsAfter);
+
+                if (tabsAfter.length > 0) {
+                    const targetTab = tabsAfter[index % tabsAfter.length];
+                    clickedTabName = stripTimeSuffix(targetTab.textContent);
+                    log(`[Loop] Cycle ${cycle}: Clicking tab "${clickedTabName}"`);
+                    targetTab.dispatchEvent(new MouseEvent('click', { view: window, bubbles: true, cancelable: true }));
+                    index++;
+                }
+            } else {
+                const tabsAfter = queryAllInInteractionRoots('button.grow');
+                log(`[Loop] Cycle ${cycle}: Found ${tabsAfter.length} tabs`);
+                updateTabNames(tabsAfter);
+                log(`[Loop] Cycle ${cycle}: User focused, skipping tab rotation`);
             }
 
             // Wait longer for content to load (1.5s instead of 0.5s)
             await new Promise(r => setTimeout(r, 1500));
 
-            // Check for completion badges (Good/Bad) after clicking
-            const allSpansAfter = queryAll('span');
+            const allSpansAfter = queryAllInInteractionRoots('span');
             const feedbackTexts = allSpansAfter
                 .filter(s => {
                     const t = s.textContent.trim();
@@ -849,11 +1094,9 @@
 
             log(`[Loop] Cycle ${cycle}: Found ${feedbackTexts.length} Good/Bad badges`);
 
-            // Update completion status for the tab we just clicked
             if (clickedTabName && feedbackTexts.length > 0) {
                 updateConversationCompletionState(clickedTabName, 'done');
             } else if (clickedTabName && !window.__autoAcceptState.completionStatus[clickedTabName]) {
-                // Leave as undefined (WAITING)
             }
 
             const state = window.__autoAcceptState;
@@ -1031,14 +1274,14 @@
                 log(`Starting static poll loop...`);
                 (async function staticLoop() {
                     while (state.isRunning && state.sessionID === sid) {
-                        performClick(['button', '[class*="button"]', '[class*="anysphere"]']);
+                        performClick(['button', 'div[role="button"]', '[aria-label*="Accept"]', '[aria-label*="Run"]', '[title*="Accept"]', '[title*="Run"]', '[class*="button"]', '[class*="anysphere"]']);
                         await new Promise(r => setTimeout(r, config.pollInterval || 1000));
                     }
                 })();
             }
         } catch (e) {
             log(`ERROR in __autoAcceptStart: ${e.message}`);
-            console.error('[AutoAccept] Start error:', e);
+            console.error('[Multi Purpose Agent] Start error:', e);
         }
     };
 

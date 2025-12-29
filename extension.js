@@ -16,16 +16,16 @@ function getSettingsPanel() {
 
 // states
 
-const GLOBAL_STATE_KEY = 'auto-accept-enabled-global';
-const PRO_STATE_KEY = 'auto-accept-isPro';
-const FREQ_STATE_KEY = 'auto-accept-frequency';
-const BANNED_COMMANDS_KEY = 'auto-accept-banned-commands';
-const ROI_STATS_KEY = 'auto-accept-roi-stats'; // For ROI notification
+const GLOBAL_STATE_KEY = 'multi-purpose-agent-enabled-global';
+const PRO_STATE_KEY = 'multi-purpose-agent-isPro';
+const FREQ_STATE_KEY = 'multi-purpose-agent-frequency';
+const BANNED_COMMANDS_KEY = 'multi-purpose-agent-banned-commands';
+const ROI_STATS_KEY = 'multi-purpose-agent-roi-stats'; // For ROI notification
 const SECONDS_PER_CLICK = 5; // Conservative estimate: 5 seconds saved per auto-accept
 const LICENSE_API = 'https://auto-accept-backend.onrender.com/api';
 // Locking
-const LOCK_KEY = 'auto-accept-instance-lock';
-const HEARTBEAT_KEY = 'auto-accept-instance-heartbeat';
+const LOCK_KEY = 'multi-purpose-agent-instance-lock';
+const HEARTBEAT_KEY = 'multi-purpose-agent-instance-heartbeat';
 const INSTANCE_ID = Math.random().toString(36).substring(7);
 
 let isEnabled = false;
@@ -36,9 +36,11 @@ let bannedCommands = []; // List of command patterns to block
 
 // Background Mode state
 let backgroundModeEnabled = false;
-const BACKGROUND_DONT_SHOW_KEY = 'auto-accept-background-dont-show';
-const BACKGROUND_MODE_KEY = 'auto-accept-background-mode';
-const VERSION_7_0_KEY = 'auto-accept-version-7.0-notification-shown';
+const BACKGROUND_DONT_SHOW_KEY = 'multi-purpose-agent-background-dont-show';
+const BACKGROUND_MODE_KEY = 'multi-purpose-agent-background-mode';
+const VERSION_7_0_KEY = 'multi-purpose-agent-version-7.0-notification-shown';
+const STARTUP_SETUP_PROMPT_KEY = 'multi-purpose-agent-startup-setup-prompt-last';
+const STARTUP_SETUP_PROMPT_COOLDOWN_MS = 1000 * 60 * 60 * 24;
 
 // --- Scheduler Class ---
 class Scheduler {
@@ -68,7 +70,7 @@ class Scheduler {
     }
 
     loadConfig() {
-        const cfg = vscode.workspace.getConfiguration('auto-accept.schedule');
+        const cfg = vscode.workspace.getConfiguration('multi-purpose-agent.schedule');
         this.enabled = cfg.get('enabled', false);
         this.config = {
             mode: cfg.get('mode', 'interval'),
@@ -114,7 +116,7 @@ class Scheduler {
             if (text && this.cdpHandler) {
                 this.log(`Scheduler: Sending prompt "${text}"`);
                 await this.cdpHandler.sendPrompt(text);
-                vscode.window.showInformationMessage(`Auto Accept: Scheduled prompt sent.`);
+                vscode.window.showInformationMessage(`Multi Purpose Agent: Scheduled prompt sent.`);
             }
         }).catch(err => {
             this.log(`Scheduler Error: ${err.message}`);
@@ -162,47 +164,47 @@ function detectIDE() {
 
 async function activate(context) {
     globalContext = context;
-    console.log('Auto Accept Extension: Activator called.');
+    console.log('Multi Purpose Agent Extension: Activator called.');
 
     // CRITICAL: Create status bar items FIRST before anything else
     try {
         statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
-        statusBarItem.command = 'auto-accept.toggle';
-        statusBarItem.text = '$(sync~spin) Auto Accept: Loading...';
-        statusBarItem.tooltip = 'Auto Accept is initializing...';
+        statusBarItem.command = 'multi-purpose-agent.toggle';
+        statusBarItem.text = '$(sync~spin) MPA: Loading...';
+        statusBarItem.tooltip = 'Multi Purpose Agent is initializing...';
         context.subscriptions.push(statusBarItem);
         statusBarItem.show();
 
         statusSettingsItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 98);
-        statusSettingsItem.command = 'auto-accept.openSettings';
+        statusSettingsItem.command = 'multi-purpose-agent.openSettings';
         statusSettingsItem.text = '$(gear)';
-        statusSettingsItem.tooltip = 'Auto Accept Settings & Pro Features';
+        statusSettingsItem.tooltip = 'Multi Purpose Agent Settings & Pro Features';
         context.subscriptions.push(statusSettingsItem);
         statusSettingsItem.show();
 
         // Background Mode status bar item
         statusBackgroundItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 99);
-        statusBackgroundItem.command = 'auto-accept.toggleBackground';
+        statusBackgroundItem.command = 'multi-purpose-agent.toggleBackground';
         statusBackgroundItem.text = '$(globe) Background: OFF';
         statusBackgroundItem.tooltip = 'Background Mode (Pro) - Works on all chats';
         context.subscriptions.push(statusBackgroundItem);
-        // Don't show by default - only when Auto Accept is ON
+        // Don't show by default - only when Agent is ON
 
-        console.log('Auto Accept: Status bar items created and shown.');
+        console.log('Multi Purpose Agent: Status bar items created and shown.');
     } catch (sbError) {
         console.error('CRITICAL: Failed to create status bar items:', sbError);
     }
 
     try {
         // 1. Initialize State
-        isEnabled = context.globalState.get(GLOBAL_STATE_KEY, true);
+        isEnabled = context.globalState.get(GLOBAL_STATE_KEY, false);
         isPro = true;
 
         // Load frequency
-        pollFrequency = context.globalState.get(FREQ_STATE_KEY, 100);
+        pollFrequency = context.globalState.get(FREQ_STATE_KEY, 2000);
 
         // Load background mode state
-        backgroundModeEnabled = context.globalState.get(BACKGROUND_MODE_KEY, true);
+        backgroundModeEnabled = context.globalState.get(BACKGROUND_MODE_KEY, false);
 
         // Load banned commands list (default: common dangerous patterns)
         const defaultBannedCommands = [
@@ -228,11 +230,11 @@ async function activate(context) {
         currentIDE = detectIDE();
 
         // 2. Create Output Channel
-        outputChannel = vscode.window.createOutputChannel('Auto Accept');
+        outputChannel = vscode.window.createOutputChannel('Multi Purpose Agent');
         context.subscriptions.push(outputChannel);
 
-        log(`Auto Accept: Activating...`);
-        log(`Auto Accept: Detected environment: ${currentIDE.toUpperCase()}`);
+        log(`Multi Purpose Agent: Activating...`);
+        log(`Multi Purpose Agent: Detected environment: ${currentIDE.toUpperCase()}`);
 
         // Setup Focus Listener - Push state to browser (authoritative source)
         vscode.window.onDidChangeWindowState(async (e) => {
@@ -261,7 +263,7 @@ async function activate(context) {
 
             // Persistence logging
             try {
-                const logPath = path.join(context.extensionPath, 'auto-accept-cdp.log');
+                const logPath = path.join(context.extensionPath, 'multi-purpose-agent-cdp.log');
                 cdpHandler.setLogFile(logPath);
                 log(`CDP logging to: ${logPath}`);
             } catch (e) {
@@ -276,7 +278,7 @@ async function activate(context) {
             scheduler.start();
         } catch (err) {
             log(`Failed to initialize CDP handlers: ${err.message}`);
-            vscode.window.showErrorMessage(`Auto Accept Error: ${err.message}`);
+            vscode.window.showErrorMessage(`Multi Purpose Agent Error: ${err.message}`);
         }
 
         // 4. Update Status Bar (already created at start)
@@ -285,13 +287,13 @@ async function activate(context) {
 
         // 5. Register Commands
         context.subscriptions.push(
-            vscode.commands.registerCommand('auto-accept.toggle', () => handleToggle(context)),
-            vscode.commands.registerCommand('auto-accept.relaunch', () => handleRelaunch()),
-            vscode.commands.registerCommand('auto-accept.updateFrequency', (freq) => handleFrequencyUpdate(context, freq)),
-            vscode.commands.registerCommand('auto-accept.toggleBackground', () => handleBackgroundToggle(context)),
-            vscode.commands.registerCommand('auto-accept.updateBannedCommands', (commands) => handleBannedCommandsUpdate(context, commands)),
-            vscode.commands.registerCommand('auto-accept.getBannedCommands', () => bannedCommands),
-            vscode.commands.registerCommand('auto-accept.getROIStats', async () => {
+            vscode.commands.registerCommand('multi-purpose-agent.toggle', () => handleToggle(context)),
+            vscode.commands.registerCommand('multi-purpose-agent.relaunch', () => handleRelaunch()),
+            vscode.commands.registerCommand('multi-purpose-agent.updateFrequency', (freq) => handleFrequencyUpdate(context, freq)),
+            vscode.commands.registerCommand('multi-purpose-agent.toggleBackground', () => handleBackgroundToggle(context)),
+            vscode.commands.registerCommand('multi-purpose-agent.updateBannedCommands', (commands) => handleBannedCommandsUpdate(context, commands)),
+            vscode.commands.registerCommand('multi-purpose-agent.getBannedCommands', () => bannedCommands),
+            vscode.commands.registerCommand('multi-purpose-agent.getROIStats', async () => {
                 const stats = await loadROIStats(context);
                 const timeSavedSeconds = stats.clicksThisWeek * SECONDS_PER_CLICK;
                 const timeSavedMinutes = Math.round(timeSavedSeconds / 60);
@@ -303,7 +305,7 @@ async function activate(context) {
                         : `${timeSavedMinutes} minutes`
                 };
             }),
-            vscode.commands.registerCommand('auto-accept.openSettings', () => {
+            vscode.commands.registerCommand('multi-purpose-agent.openSettings', () => {
                 const panel = getSettingsPanel();
                 if (panel) {
                     panel.createOrShow(context.extensionUri, context);
@@ -337,11 +339,11 @@ async function activate(context) {
         // 8. Show Version 5.0 Notification (Once)
         showVersionNotification(context);
 
-        log('Auto Accept: Activation complete');
+        log('Multi Purpose Agent: Activation complete');
     } catch (error) {
         console.error('ACTIVATION CRITICAL FAILURE:', error);
         log(`ACTIVATION CRITICAL FAILURE: ${error.message}`);
-        vscode.window.showErrorMessage(`Auto Accept Extension failed to activate: ${error.message}`);
+        vscode.window.showErrorMessage(`Multi Purpose Agent Extension failed to activate: ${error.message}`);
     }
 }
 
@@ -366,9 +368,29 @@ async function ensureCDPOrPrompt(showPrompt = false) {
     }
 }
 
+async function maybePromptStartupSetup(context) {
+    if (!context || !cdpHandler || !relauncher) return;
+    if (!isEnabled) return;
+
+    try {
+        const cdpAvailable = await cdpHandler.isCDPAvailable();
+        if (cdpAvailable) return;
+
+        const now = Date.now();
+        const lastPrompt = context.globalState.get(STARTUP_SETUP_PROMPT_KEY, 0);
+        if (now - lastPrompt < STARTUP_SETUP_PROMPT_COOLDOWN_MS) return;
+
+        await context.globalState.update(STARTUP_SETUP_PROMPT_KEY, now);
+        await relauncher.showRelaunchPrompt();
+    } catch (e) {
+        log(`Startup setup prompt failed: ${e.message}`);
+    }
+}
+
 async function checkEnvironmentAndStart() {
     if (isEnabled) {
-        log('Initializing Auto Accept environment...');
+        log('Initializing Multi Purpose Agent environment...');
+        await maybePromptStartupSetup(globalContext);
         await ensureCDPOrPrompt(false);
         await startPolling();
         // Start stats collection if already enabled on startup
@@ -384,17 +406,11 @@ async function handleToggle(context) {
     try {
         if (isEnabled) {
             const choice = await vscode.window.showWarningMessage(
-                "Are you sure you want to turn off Auto Accept?",
+                "Are you sure you want to turn off Multi Purpose Agent?",
                 { modal: true },
                 "Turn Off",
-                "Open Prompt Mode",
                 "View Dashboard"
             );
-            if (choice === "Open Prompt Mode") {
-                const panel = getSettingsPanel();
-                if (panel) panel.createOrShow(context.extensionUri, context, 'prompt');
-                return;
-            }
             if (choice === "View Dashboard") {
                 const panel = getSettingsPanel();
                 if (panel) panel.createOrShow(context.extensionUri, context);
@@ -418,13 +434,13 @@ async function handleToggle(context) {
 
         // Do CDP operations in background (don't block toggle)
         if (isEnabled) {
-            log('Auto Accept: Enabled');
+            log('Multi Purpose Agent: Enabled');
             // These operations happen in background
             ensureCDPOrPrompt(true).then(() => startPolling());
             startStatsCollection(context);
             incrementSessionCount(context);
         } else {
-            log('Auto Accept: Disabled');
+            log('Multi Purpose Agent: Disabled');
 
             // Fire-and-forget: Show session summary notification (non-blocking)
             if (cdpHandler) {
@@ -484,8 +500,8 @@ async function handleBannedCommandsUpdate(context, commands) {
     }
 }
 
-async function handleBackgroundToggle(context) {
-    log('Background toggle clicked');
+async function handleBackgroundToggle(context, forceValue) {
+    log(`Background toggle clicked. Force: ${forceValue}`);
 
     // Free tier: Show Pro message
 
@@ -502,45 +518,18 @@ async function handleBackgroundToggle(context) {
         return;
     }
 
-    // Pro tier: Check if we should show first-time dialog
-    const dontShowAgain = context.globalState.get(BACKGROUND_DONT_SHOW_KEY, false);
-
-    if (!dontShowAgain && !backgroundModeEnabled) {
-        // First-time enabling: Show confirmation dialog
-        const choice = await vscode.window.showInformationMessage(
-            'Turn on Background Mode?\n\n' +
-            'This lets Auto Accept work on all your open chats at once. ' +
-            'It will switch between tabs to click Accept for you.\n\n' +
-            'You might see tabs change quickly while it works.',
-            { modal: true },
-            'Enable',
-            "Don't Show Again & Enable"
-        );
-
-        if (choice === 'Cancel' || !choice) {
-            log('Background mode cancelled by user');
-            return;
-        }
-
-        if (choice === "Don't Show Again & Enable") {
-            await context.globalState.update(BACKGROUND_DONT_SHOW_KEY, true);
-            log('Background mode: Dont show again set');
-        }
-
-        // Enable it
-        backgroundModeEnabled = true;
-        await context.globalState.update(BACKGROUND_MODE_KEY, true);
-        log('Background mode enabled');
+    if (forceValue !== undefined) {
+        backgroundModeEnabled = forceValue;
     } else {
-        // Simple toggle
         backgroundModeEnabled = !backgroundModeEnabled;
-        await context.globalState.update(BACKGROUND_MODE_KEY, backgroundModeEnabled);
-        log(`Background mode toggled: ${backgroundModeEnabled}`);
+    }
 
-        // Hide overlay in background if being disabled
-        if (!backgroundModeEnabled && cdpHandler) {
-            cdpHandler.hideBackgroundOverlay().catch(() => { });
-        }
+    await context.globalState.update(BACKGROUND_MODE_KEY, backgroundModeEnabled);
+    log(`Background mode set to: ${backgroundModeEnabled}`);
+
+    // Hide overlay in background if being disabled
+    if (!backgroundModeEnabled && cdpHandler) {
+        cdpHandler.hideBackgroundOverlay().catch(() => { });
     }
 
     // Update UI immediately
@@ -549,6 +538,12 @@ async function handleBackgroundToggle(context) {
     // Sync sessions in background (don't block)
     if (isEnabled) {
         syncSessions().catch(() => { });
+    }
+
+    // Update Settings Panel if open (to sync toggle switch)
+    const PanelClass = getSettingsPanel();
+    if (PanelClass && PanelClass.currentPanel) {
+        PanelClass.currentPanel.sendBackgroundMode();
     }
 }
 
@@ -567,13 +562,15 @@ async function syncSessions() {
             });
         } catch (err) {
             log(`CDP: Sync error: ${err.message}`);
+        } finally {
+            updateStatusBar();
         }
     }
 }
 
 async function startPolling() {
     if (pollTimer) clearInterval(pollTimer);
-    log('Auto Accept: Monitoring session...');
+    log('Multi Purpose Agent: Monitoring session...');
 
     // Initial trigger
     await syncSessions();
@@ -623,7 +620,7 @@ async function stopPolling() {
         statsCollectionTimer = null;
     }
     if (cdpHandler) await cdpHandler.stop();
-    log('Auto Accept: Polling stopped');
+    log('Multi Purpose Agent: Polling stopped');
 }
 
 // --- ROI Stats Collection ---
@@ -676,7 +673,7 @@ async function showWeeklySummaryNotification(context, lastWeekStats) {
         timeStr = `${timeSavedMinutes} minutes`;
     }
 
-    const message = `📊 Last week, Auto Accept saved you ${timeStr} by auto-clicking ${lastWeekStats.clicksThisWeek} buttons!`;
+    const message = `📊 Last week, Multi Purpose Agent saved you ${timeStr} by auto-clicking ${lastWeekStats.clicksThisWeek} buttons!`;
 
     let detail = '';
     if (lastWeekStats.sessionsThisWeek > 0) {
@@ -725,7 +722,7 @@ async function showSessionSummaryNotification(context, summary) {
     const message = lines.join('\n');
 
     vscode.window.showInformationMessage(
-        `🤖 Auto Accept: ${summary.clicks} actions handled this session`,
+        `🤖 Multi Purpose Agent: ${summary.clicks} actions handled this session`,
         { detail: message },
         'View Stats'
     ).then(choice => {
@@ -746,7 +743,7 @@ async function showAwayActionsNotification(context, actionsCount) {
     }
     log(`[Notification] Showing away actions notification for ${actionsCount} actions`);
 
-    const message = `🚀 Auto Accept handled ${actionsCount} action${actionsCount > 1 ? 's' : ''} while you were away.`;
+    const message = `🚀 Multi Purpose Agent handled ${actionsCount} action${actionsCount > 1 ? 's' : ''} while you were away.`;
     const detail = `Agents stayed autonomous while you focused elsewhere.`;
 
     vscode.window.showInformationMessage(
@@ -777,7 +774,7 @@ async function showBackgroundModeUpsell(context) {
     await context.globalState.update(UPSELL_COOLDOWN_KEY, now);
 
     const choice = await vscode.window.showInformationMessage(
-        `💡 Auto Accept could've handled this tab switch automatically.`,
+        `💡 Multi Purpose Agent could've handled this tab switch automatically.`,
         { detail: 'Enable Background Mode to keep all your agents moving in parallel—no manual tab switching needed.' },
         'Enable Background Mode',
         'Not Now'
@@ -861,11 +858,26 @@ function updateStatusBar() {
 
     if (isEnabled) {
         let statusText = 'ON';
-        let tooltip = `Auto Accept is running.`;
+        let tooltip = `Multi Purpose Agent is running.`;
         let bgColor = undefined;
+        let command = 'multi-purpose-agent.toggle';
 
-        if (cdpHandler && cdpHandler.getConnectionCount() > 0) {
-            tooltip += ' (CDP Connected)';
+        if (cdpHandler) {
+            const injectedCount = typeof cdpHandler.getInjectedCount === 'function' ? cdpHandler.getInjectedCount() : 0;
+            const connectionCount = typeof cdpHandler.getConnectionCount === 'function' ? cdpHandler.getConnectionCount() : 0;
+
+            if (injectedCount > 0) {
+                tooltip += ` (CDP Active: ${injectedCount})`;
+            } else if (connectionCount > 0) {
+                statusText = 'ON (No Chat)';
+                tooltip += ' (CDP Connected - Open a chat view to attach)';
+                bgColor = new vscode.ThemeColor('statusBarItem.warningBackground');
+            } else {
+                statusText = 'ON (Disconnected)';
+                tooltip += ' (CDP Disconnected - Click to relaunch with CDP)';
+                bgColor = new vscode.ThemeColor('statusBarItem.warningBackground');
+                command = 'multi-purpose-agent.relaunch';
+            }
         }
 
         if (isLockedOut) {
@@ -873,11 +885,12 @@ function updateStatusBar() {
             bgColor = new vscode.ThemeColor('statusBarItem.warningBackground');
         }
 
-        statusBarItem.text = `$(check) Auto Accept: ${statusText}`;
+        statusBarItem.text = `$(check) Multi Purpose Agent: ${statusText}`;
         statusBarItem.tooltip = tooltip;
         statusBarItem.backgroundColor = bgColor;
+        statusBarItem.command = command;
 
-        // Show Background Mode toggle when Auto Accept is ON
+        // Show Background Mode toggle when Multi Purpose Agent is ON
         if (statusBackgroundItem) {
             if (backgroundModeEnabled) {
                 statusBackgroundItem.text = '$(sync~spin) Background: ON';
@@ -892,11 +905,12 @@ function updateStatusBar() {
         }
 
     } else {
-        statusBarItem.text = '$(circle-slash) Auto Accept: OFF';
-        statusBarItem.tooltip = 'Click to enable Auto Accept.';
+        statusBarItem.text = '$(circle-slash) Multi Purpose Agent: OFF';
+        statusBarItem.tooltip = 'Click to enable Multi Purpose Agent.';
         statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
+        statusBarItem.command = 'multi-purpose-agent.toggle';
 
-        // Hide Background Mode toggle when Auto Accept is OFF
+        // Hide Background Mode toggle when Multi Purpose Agent is OFF
         if (statusBackgroundItem) {
             statusBackgroundItem.hide();
         }
@@ -1072,12 +1086,12 @@ async function showVersionNotification(context) {
     if (hasShown) return;
 
     // Copy for v7.0
-    const title = "🚀 What's new in Auto Accept 7.0";
+    const title = "🚀 What's new in Multi Purpose Agent 7.0";
     const body = `Smarter. Faster. More reliable.
 
 ✅ Smart Away Notifications — Get notified only when actions happened while you were truly away.
 
-📊 Session Insights — See exactly what happened when you turn off Auto Accept: file edits, terminal commands, and blocked interruptions.
+📊 Session Insights — See exactly what happened when you turn off Multi Purpose Agent: file edits, terminal commands, and blocked interruptions.
 
 ⚡ Improved Background Mode — Faster, more reliable multi-chat handling.
 

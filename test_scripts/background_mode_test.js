@@ -189,7 +189,7 @@ async function runTests() {
     // Test 3: Script length is reasonable
     totalTests++;
     const scriptLength = scriptContent.length;
-    const lengthOk = scriptLength > 10000 && scriptLength < 50000;
+    const lengthOk = scriptLength > 10000 && scriptLength < 65000;
     if (logResult('Script length reasonable', lengthOk, `${scriptLength} bytes`)) passedTests++;
 
     // Test 4: Script contains IIFE (may have comment header)

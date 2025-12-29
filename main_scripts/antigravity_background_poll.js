@@ -12,7 +12,7 @@ const AG_NEXT_CONVERSATION_PAUSE = 3000
 export async function antigravityBackgroundPoll() {
     console.log('[BG-Poll] antigravityBackgroundPoll started');
     let currentTabIndex = 0;
-    utils.assert(window.__autoAcceptState, "AutoAccept state not found");
+    utils.assert(window.__autoAcceptState, "Multi Purpose Agent state not found");
     const sid = window.__autoAcceptState.sessionID;
     console.log(`[BG-Poll] Session ID: ${sid}, isRunning: ${window.__autoAcceptState.isRunning}`);
 

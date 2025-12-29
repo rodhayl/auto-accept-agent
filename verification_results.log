@@ -1,10 +1,10 @@
 --- Bundle Verification Test Started ---
-Bundle length: 43099
+Bundle length: 53012
 Executing bundle in sandbox...
-[Bundle Log] [AutoAccept] [Analytics] State initialized
-[Bundle Log] [AutoAccept] [Focus] Initialized (awaiting extension sync)
-[Bundle Log] [AutoAccept] [Analytics] Initialized
-[Bundle Log] [AutoAccept] Core Bundle Initialized.
+[Bundle Log] [Multi Purpose Agent] [Analytics] State initialized
+[Bundle Log] [Multi Purpose Agent] [Focus] Initialized (awaiting extension sync)
+[Bundle Log] [Multi Purpose Agent] [Analytics] Initialized
+[Bundle Log] [Multi Purpose Agent] Core Bundle Initialized.
 ✓ Bundle execution finished without crashing
 ✓ __autoAcceptStart is defined
 ✓ __autoAcceptState initialized correctly
