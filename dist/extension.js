@@ -20,7 +20,7 @@ var require_settings_panel = __commonJS({
   "settings-panel.js"(exports2, module2) {
     var vscode2 = require("vscode");
     var { STRIPE_LINKS } = require_config();
-    var fs = require("fs");
+    var fs2 = require("fs");
     var path2 = require("path");
     var SettingsPanel2 = class _SettingsPanel {
       static currentPanel = void 0;
@@ -198,21 +198,21 @@ var require_settings_panel = __commonJS({
         });
       }
       getLogFilePath() {
-        return path2.join(this.context.extensionPath, "auto-accept-cdp.log");
+        return path2.join(this.context.extensionPath, "multi-purpose-agent-cdp.log");
       }
       readTail(filePath, { tailLines = 300, maxBytes = 25e4 } = {}) {
         try {
-          if (!fs.existsSync(filePath)) {
+          if (!fs2.existsSync(filePath)) {
             return { text: "", meta: { filePath, exists: false } };
           }
-          const stat = fs.statSync(filePath);
+          const stat = fs2.statSync(filePath);
           const size = stat.size || 0;
           const start = Math.max(0, size - maxBytes);
           const length = size - start;
-          const fd = fs.openSync(filePath, "r");
+          const fd = fs2.openSync(filePath, "r");
           try {
             const buf = Buffer.alloc(length);
-            fs.readSync(fd, buf, 0, length, start);
+            fs2.readSync(fd, buf, 0, length, start);
             const content = buf.toString("utf8");
             const lines = content.split(/\r?\n/).filter((l) => l.length > 0);
             const tail = lines.slice(-tailLines).join("\n");
@@ -228,7 +228,7 @@ var require_settings_panel = __commonJS({
             };
           } finally {
             try {
-              fs.closeSync(fd);
+              fs2.closeSync(fd);
             } catch (e) {
             }
           }
@@ -248,7 +248,7 @@ var require_settings_panel = __commonJS({
       async openLogFile() {
         const filePath = this.getLogFilePath();
         try {
-          if (!fs.existsSync(filePath)) {
+          if (!fs2.existsSync(filePath)) {
             vscode2.window.showInformationMessage("Log file not found yet. Turn Multi Purpose Agent ON first.");
             return;
           }
@@ -261,7 +261,7 @@ var require_settings_panel = __commonJS({
       clearLogs() {
         const filePath = this.getLogFilePath();
         try {
-          fs.writeFileSync(filePath, "", "utf8");
+          fs2.writeFileSync(filePath, "", "utf8");
         } catch (e) {
         }
         this.sendLogs(300);
@@ -4524,7 +4524,7 @@ var require_cdp_handler = __commonJS({
   "main_scripts/cdp-handler.js"(exports2, module2) {
     var WebSocket = require_ws();
     var http = require("http");
-    var fs = require("fs");
+    var fs2 = require("fs");
     var path2 = require("path");
     var LOG_PREFIX = "[CDP]";
     var CDPHandler = class {
@@ -4542,7 +4542,7 @@ var require_cdp_handler = __commonJS({
       setLogFile(filePath) {
         this.logFilePath = filePath;
         if (filePath) {
-          fs.writeFileSync(filePath, `[${(/* @__PURE__ */ new Date()).toISOString()}] CDP Log Initialized
+          fs2.writeFileSync(filePath, `[${(/* @__PURE__ */ new Date()).toISOString()}] CDP Log Initialized
 `);
         }
       }
@@ -4551,7 +4551,7 @@ var require_cdp_handler = __commonJS({
         if (this.logger) this.logger(msg);
         if (this.logFilePath) {
           try {
-            fs.appendFileSync(this.logFilePath, `${msg}
+            fs2.appendFileSync(this.logFilePath, `${msg}
 `, "utf8");
           } catch (e) {
           }
@@ -4730,7 +4730,7 @@ var require_cdp_handler = __commonJS({
       }
       getComposedScript() {
         const scriptPath = path2.join(__dirname, "..", "main_scripts", "full_cdp_script.js");
-        return fs.readFileSync(scriptPath, "utf8");
+        return fs2.readFileSync(scriptPath, "utf8");
       }
       sendCommand(pageId, method, params = {}) {
         const conn = this.connections.get(pageId);
@@ -4924,7 +4924,7 @@ var require_relauncher = __commonJS({
     var { execSync, spawn } = require("child_process");
     var os = require("os");
     var http = require("http");
-    var fs = require("fs");
+    var fs2 = require("fs");
     var path2 = require("path");
     var BASE_CDP_PORT = 9e3;
     var CDP_FLAG = `--remote-debugging-port=${BASE_CDP_PORT}`;
@@ -4992,7 +4992,7 @@ var require_relauncher = __commonJS({
           path2.join(process.env.APPDATA || "", "Microsoft", "Internet Explorer", "Quick Launch", "User Pinned", "TaskBar", `${ideName}.lnk`)
         ];
         for (const shortcutPath of possiblePaths) {
-          if (fs.existsSync(shortcutPath)) {
+          if (fs2.existsSync(shortcutPath)) {
             const info = await this._readWindowsShortcut(shortcutPath);
             shortcuts.push({
               path: shortcutPath,
@@ -5020,7 +5020,7 @@ try {
     Write-Output "ERROR:$($_.Exception.Message)"
 }
 `;
-          fs.writeFileSync(scriptPath, psScript, "utf8");
+          fs2.writeFileSync(scriptPath, psScript, "utf8");
           const result = execSync(`powershell -ExecutionPolicy Bypass -File "${scriptPath}"`, {
             encoding: "utf8",
             timeout: 1e4
@@ -5043,7 +5043,7 @@ try {
           return { args: "", target: "", hasFlag: false };
         } finally {
           try {
-            fs.unlinkSync(scriptPath);
+            fs2.unlinkSync(scriptPath);
           } catch (e) {
           }
         }
@@ -5051,8 +5051,8 @@ try {
       async _findMacOSShortcuts(ideName) {
         const shortcuts = [];
         const wrapperPath = path2.join(os.homedir(), ".local", "bin", `${ideName.toLowerCase()}-cdp`);
-        if (fs.existsSync(wrapperPath)) {
-          const content = fs.readFileSync(wrapperPath, "utf8");
+        if (fs2.existsSync(wrapperPath)) {
+          const content = fs2.readFileSync(wrapperPath, "utf8");
           shortcuts.push({
             path: wrapperPath,
             hasFlag: content.includes("--remote-debugging-port"),
@@ -5060,7 +5060,7 @@ try {
           });
         }
         const appPath = `/Applications/${ideName}.app`;
-        if (fs.existsSync(appPath)) {
+        if (fs2.existsSync(appPath)) {
           shortcuts.push({
             path: appPath,
             hasFlag: false,
@@ -5078,8 +5078,8 @@ try {
           `/usr/share/applications/${ideName.toLowerCase()}.desktop`
         ];
         for (const desktopPath of desktopLocations) {
-          if (fs.existsSync(desktopPath)) {
-            const content = fs.readFileSync(desktopPath, "utf8");
+          if (fs2.existsSync(desktopPath)) {
+            const content = fs2.readFileSync(desktopPath, "utf8");
             const execMatch = content.match(/^Exec=(.*)$/m);
             const execLine = execMatch ? execMatch[1] : "";
             shortcuts.push({
@@ -5143,7 +5143,7 @@ try {
     Write-Output "ERROR:$($_.Exception.Message)"
 }
 `;
-          fs.writeFileSync(scriptPath, psScript, "utf8");
+          fs2.writeFileSync(scriptPath, psScript, "utf8");
           this.log(`DEBUG: Wrote modify script to ${scriptPath}`);
           const rawResult = execSync(`powershell -ExecutionPolicy Bypass -File "${scriptPath}"`, {
             encoding: "utf8",
@@ -5180,7 +5180,7 @@ try {
           return { success: false, modified: false, message: e.message };
         } finally {
           try {
-            fs.unlinkSync(scriptPath);
+            fs2.unlinkSync(scriptPath);
           } catch (e) {
           }
         }
@@ -5190,7 +5190,7 @@ try {
         const wrapperDir = path2.join(os.homedir(), ".local", "bin");
         const wrapperPath = path2.join(wrapperDir, `${ideName.toLowerCase()}-cdp`);
         try {
-          fs.mkdirSync(wrapperDir, { recursive: true });
+          fs2.mkdirSync(wrapperDir, { recursive: true });
           const appBundle = `/Applications/${ideName}.app`;
           const possibleBinaries = [
             // Standard macOS app binary location
@@ -5202,7 +5202,7 @@ try {
           ];
           let binaryPath = null;
           for (const binPath of possibleBinaries) {
-            if (fs.existsSync(binPath)) {
+            if (fs2.existsSync(binPath)) {
               binaryPath = binPath;
               this.log(`Found macOS binary at: ${binPath}`);
               break;
@@ -5216,7 +5216,7 @@ try {
 # Uses 'open -a' for reliable app launching with arguments
 open -a "${appBundle}" --args ${CDP_FLAG} "$@"
 `;
-            fs.writeFileSync(wrapperPath, scriptContent, { mode: 493 });
+            fs2.writeFileSync(wrapperPath, scriptContent, { mode: 493 });
             this.log(`Created macOS wrapper (open -a method): ${wrapperPath}`);
           } else {
             const scriptContent = `#!/bin/bash
@@ -5224,7 +5224,7 @@ open -a "${appBundle}" --args ${CDP_FLAG} "$@"
 # Generated: ${(/* @__PURE__ */ new Date()).toISOString()}
 "${binaryPath}" ${CDP_FLAG} "$@"
 `;
-            fs.writeFileSync(wrapperPath, scriptContent, { mode: 493 });
+            fs2.writeFileSync(wrapperPath, scriptContent, { mode: 493 });
             this.log(`Created macOS wrapper (direct binary): ${wrapperPath}`);
           }
           return {
@@ -5240,7 +5240,7 @@ open -a "${appBundle}" --args ${CDP_FLAG} "$@"
       }
       async _modifyLinuxDesktop(desktopPath) {
         try {
-          let content = fs.readFileSync(desktopPath, "utf8");
+          let content = fs2.readFileSync(desktopPath, "utf8");
           const originalContent = content;
           if (content.includes("--remote-debugging-port")) {
             content = content.replace(
@@ -5258,8 +5258,8 @@ open -a "${appBundle}" --args ${CDP_FLAG} "$@"
           }
           const userDesktopDir = path2.join(os.homedir(), ".local", "share", "applications");
           const targetPath = desktopPath.includes(".local") ? desktopPath : path2.join(userDesktopDir, path2.basename(desktopPath));
-          fs.mkdirSync(userDesktopDir, { recursive: true });
-          fs.writeFileSync(targetPath, content);
+          fs2.mkdirSync(userDesktopDir, { recursive: true });
+          fs2.writeFileSync(targetPath, content);
           this.log(`Modified Linux .desktop: ${targetPath}`);
           return { success: true, modified: true, message: `Modified: ${path2.basename(targetPath)}` };
         } catch (e) {
@@ -5315,7 +5315,7 @@ ${commandLine}
 del "%~f0" & exit
 `;
         try {
-          fs.writeFileSync(batchPath, batchContent, "utf8");
+          fs2.writeFileSync(batchPath, batchContent, "utf8");
           this.log(`Created relaunch batch: ${batchPath}`);
           this.log(`Command: ${commandLine}`);
           const child = spawn("explorer.exe", [batchPath], {
@@ -5344,7 +5344,7 @@ sleep 2
 ${launchCommand}
 `;
         try {
-          fs.writeFileSync(scriptPath, scriptContent, { mode: 493 });
+          fs2.writeFileSync(scriptPath, scriptContent, { mode: 493 });
           this.log(`Created macOS relaunch script: ${scriptPath}`);
           this.log(`Shortcut type: ${shortcut.type}`);
           this.log(`Launch command: ${launchCommand}`);
@@ -5399,7 +5399,7 @@ echo "Failed to launch IDE" >&2
 exit 1
 `;
         try {
-          fs.writeFileSync(scriptPath, scriptContent, { mode: 493 });
+          fs2.writeFileSync(scriptPath, scriptContent, { mode: 493 });
           this.log(`Created Linux relaunch script: ${scriptPath}`);
           this.log(`Desktop file: ${shortcut.path}`);
           this.log(`Exec command: ${execCommand || "(none parsed)"}`);
@@ -5502,6 +5502,7 @@ exit 1
 // extension.js
 var vscode = require("vscode");
 var path = require("path");
+var fs = require("fs");
 var SettingsPanel = null;
 function getSettingsPanel() {
   if (!SettingsPanel) {
@@ -5619,6 +5620,14 @@ function log(message) {
     const timestamp = (/* @__PURE__ */ new Date()).toISOString().split("T")[1].split(".")[0];
     const logLine = `[${timestamp}] ${message}`;
     console.log(logLine);
+    if (globalContext) {
+      const logPath = path.join(globalContext.extensionPath, "multi-purpose-agent-cdp.log");
+      try {
+        fs.appendFileSync(logPath, `${logLine}
+`, "utf8");
+      } catch (e) {
+      }
+    }
   } catch (e) {
     console.error("Logging failed:", e);
   }

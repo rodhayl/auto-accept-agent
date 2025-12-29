@@ -102,6 +102,9 @@ class SettingsPanel {
                     case 'checkPro':
                         this.handleCheckPro();
                         break;
+                    case 'resetAllSettings':
+                        vscode.commands.executeCommand('multi-purpose-agent.resetSettings');
+                        break;
                 }
             },
             null,
@@ -207,7 +210,7 @@ class SettingsPanel {
     }
 
     getLogFilePath() {
-        return path.join(this.context.extensionPath, 'auto-accept-cdp.log');
+        return path.join(this.context.extensionPath, 'multi-purpose-agent-cdp.log');
     }
 
     readTail(filePath, { tailLines = 300, maxBytes = 250000 } = {}) {
@@ -639,6 +642,16 @@ class SettingsPanel {
                 </div>
 
                 <div class="section">
+                    <div class="section-label">⚙️ Danger Zone</div>
+                    <div style="font-size: 13px; opacity: 0.6; margin-bottom: 16px;">
+                        Reset all settings and data. Useful if you want to uninstall or start fresh.
+                    </div>
+                    <button id="resetAllBtn" class="btn-outline" style="width: 100%; color: #ef4444; border-color: rgba(239, 68, 68, 0.3);">
+                        Reset All Settings & Data
+                    </button>
+                </div>
+
+                <div class="section">
                     <div class="section-label">🧾 Logs</div>
                     <div style="display: flex; gap: 12px; margin-bottom: 12px;">
                         <select id="logTailSelect" style="flex: 1; background: rgba(0,0,0,0.3); border: 1px solid var(--border); color: var(--fg); padding: 8px; border-radius: 6px;">
@@ -774,6 +787,14 @@ class SettingsPanel {
                 if (openLogsBtn) openLogsBtn.addEventListener('click', () => vscode.postMessage({ command: 'openLogFile' }));
                 if (clearLogsBtn) clearLogsBtn.addEventListener('click', () => vscode.postMessage({ command: 'clearLogs' }));
                 if (logTailSelect) logTailSelect.addEventListener('change', requestLogs);
+
+                // --- Reset Logic ---
+                const resetAllBtn = document.getElementById('resetAllBtn');
+                if (resetAllBtn) {
+                    resetAllBtn.addEventListener('click', () => {
+                        vscode.postMessage({ command: 'resetAllSettings' });
+                    });
+                }
 
                 if (copyLogsBtn) {
                     copyLogsBtn.addEventListener('click', async () => {

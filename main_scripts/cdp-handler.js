@@ -145,6 +145,9 @@ class CDPHandler {
                             return '';
                         }).filter(Boolean).join(' ');
 
+                        // Filter out extension host heartbeat noise
+                        if (text.includes('[Extension Host]')) return;
+
                         if (text.includes('[Multi Purpose Agent]')) {
                             const pageTitle = page.title ? ` "${page.title}"` : '';
                             this.log(`${page.id}${pageTitle}: ${text}`);
@@ -163,7 +166,9 @@ class CDPHandler {
                 this.connections.delete(page.id);
                 resolve(false);
             });
-            ws.on('close', () => {
+            ws.on('close', (code, reason) => {
+                const pageTitle = page.title ? ` "${page.title}"` : '';
+                this.log(`WebSocket CLOSED: ${page.id}${pageTitle} code=${code} reason=${reason || 'none'}`);
                 this.connections.delete(page.id);
             });
         });

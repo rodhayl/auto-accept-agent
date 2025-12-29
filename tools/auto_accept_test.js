@@ -56,10 +56,11 @@
             { pattern: 'resume', exact: true },
             { pattern: 'retry', exact: true },
             { pattern: 'try again', exact: false },
+            { pattern: 'confirm', exact: false },
             { pattern: 'allow once', exact: true },
             { pattern: 'always allow', exact: false }
          ];
-         const REJECT_PATTERNS = ['skip', 'reject', 'cancel', 'discard', 'deny', 'close', 'other', "don't", 'not now'];
+         const REJECT_PATTERNS = ['skip', 'reject', 'cancel', 'discard', 'deny', 'close', 'refine', 'other', "don't", 'not now'];
  
          if (!el || !el.textContent) return false;
         const text = el.textContent.trim().toLowerCase();
@@ -109,7 +110,7 @@
                     let sibling = inputBox.previousElementSibling;
                     let count = 0;
                     while (sibling && count < 5) {
-                        ['div[class*="button"]', 'button', '[class*="anysphere"]'].forEach(s => {
+                        ['div[class*="button"]', 'button', '[class*="anysphere"]', '.monaco-button', '[role="button"]'].forEach(s => {
                             sibling.querySelectorAll(s).forEach(el => discoveredElements.push(el));
                         });
                         sibling = sibling.previousElementSibling;
@@ -148,11 +149,11 @@
         let panelSelector = null;
 
         if (buttons.includes("run")) {
-            targetSelectors.push('div.full-input-box', 'button', '[class*="anysphere"]');
+            targetSelectors.push('div.full-input-box', 'button', '[class*="anysphere"]', '.monaco-button', '[role="button"]');
             panelSelector = "#workbench\\.parts\\.auxiliarybar";
         }
         if (buttons.includes("accept") || buttons.includes("retry")) {
-            targetSelectors.push(".bg-ide-button-background", "button");
+            targetSelectors.push(".bg-ide-button-background", "button", ".monaco-button", "[role='button']", ".monaco-text-button");
             panelSelector = "#antigravity\\.agentPanel";
         }
 
