@@ -37,6 +37,7 @@ let bannedCommands = []; // List of command patterns to block
 
 // Background Mode state
 let backgroundModeEnabled = false;
+let syncSessionsInProgress = false; // Mutex to prevent overlapping sync calls
 const BACKGROUND_DONT_SHOW_KEY = 'multi-purpose-agent-background-dont-show';
 const BACKGROUND_MODE_KEY = 'multi-purpose-agent-background-mode';
 const VERSION_7_0_KEY = 'multi-purpose-agent-version-7.0-notification-shown';
@@ -495,8 +496,10 @@ async function handleToggle(context) {
         // Do CDP operations in background (don't block toggle)
         if (isEnabled) {
             log('Multi Purpose Agent: Enabled');
-            // These operations happen in background
-            ensureCDPOrPrompt(true).then(() => startPolling());
+            // These operations happen in background with error handling
+            ensureCDPOrPrompt(true)
+                .then(() => startPolling())
+                .catch(err => log(`Error starting polling: ${err.message}`));
             startStatsCollection(context);
             incrementSessionCount(context);
         } else {
@@ -610,7 +613,14 @@ async function handleBackgroundToggle(context, forceValue) {
 
 
 async function syncSessions() {
+    // Mutex: prevent overlapping sync calls
+    if (syncSessionsInProgress) {
+        log('CDP: Sync already in progress, skipping');
+        return;
+    }
+    
     if (cdpHandler && !isLockedOut) {
+        syncSessionsInProgress = true;
         log(`CDP: Syncing sessions (Mode: ${backgroundModeEnabled ? 'Background' : 'Simple'})...`);
         try {
             await cdpHandler.start({
@@ -623,6 +633,7 @@ async function syncSessions() {
         } catch (err) {
             log(`CDP: Sync error: ${err.message}`);
         } finally {
+            syncSessionsInProgress = false;
             updateStatusBar();
         }
     }
@@ -633,40 +644,48 @@ async function startPolling() {
     log('Multi Purpose Agent: Monitoring session...');
 
     // Initial trigger
-    await syncSessions();
+    try {
+        await syncSessions();
+    } catch (err) {
+        log(`Initial sync failed: ${err.message}`);
+    }
 
     // Polling now primarily handles the Instance Lock and ensures CDP is active
     pollTimer = setInterval(async () => {
         if (!isEnabled) return;
 
-        // Check for instance locking - only the first extension instance should control CDP
-        const lockKey = `${currentIDE.toLowerCase()}-instance-lock`;
-        const activeInstance = globalContext.globalState.get(lockKey);
-        const myId = globalContext.extension.id;
+        try {
+            // Check for instance locking - only the first extension instance should control CDP
+            const lockKey = `${currentIDE.toLowerCase()}-instance-lock`;
+            const activeInstance = globalContext.globalState.get(lockKey);
+            const myId = globalContext.extension.id;
 
-        if (activeInstance && activeInstance !== myId) {
-            const lastPing = globalContext.globalState.get(`${lockKey}-ping`);
-            if (lastPing && (Date.now() - lastPing) < 15000) {
-                if (!isLockedOut) {
-                    log(`CDP Control: Locked by another instance (${activeInstance}). Standby mode.`);
-                    isLockedOut = true;
-                    updateStatusBar();
+            if (activeInstance && activeInstance !== myId) {
+                const lastPing = globalContext.globalState.get(`${lockKey}-ping`);
+                if (lastPing && (Date.now() - lastPing) < 15000) {
+                    if (!isLockedOut) {
+                        log(`CDP Control: Locked by another instance (${activeInstance}). Standby mode.`);
+                        isLockedOut = true;
+                        updateStatusBar();
+                    }
+                    return;
                 }
-                return;
             }
+
+            // We are the leader or lock is dead
+            await globalContext.globalState.update(lockKey, myId);
+            await globalContext.globalState.update(`${lockKey}-ping`, Date.now());
+
+            if (isLockedOut) {
+                log('CDP Control: Lock acquired. Resuming control.');
+                isLockedOut = false;
+                updateStatusBar();
+            }
+
+            await syncSessions();
+        } catch (err) {
+            log(`Polling error: ${err.message}`);
         }
-
-        // We are the leader or lock is dead
-        globalContext.globalState.update(lockKey, myId);
-        globalContext.globalState.update(`${lockKey}-ping`, Date.now());
-
-        if (isLockedOut) {
-            log('CDP Control: Lock acquired. Resuming control.');
-            isLockedOut = false;
-            updateStatusBar();
-        }
-
-        await syncSessions();
     }, 5000);
 }
 

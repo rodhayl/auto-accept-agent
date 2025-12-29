@@ -107,6 +107,9 @@ var require_settings_panel = __commonJS({
               case "checkPro":
                 this.handleCheckPro();
                 break;
+              case "resetAllSettings":
+                vscode2.commands.executeCommand("multi-purpose-agent.resetSettings");
+                break;
             }
           },
           null,
@@ -622,6 +625,16 @@ var require_settings_panel = __commonJS({
                 </div>
 
                 <div class="section">
+                    <div class="section-label">\u2699\uFE0F Danger Zone</div>
+                    <div style="font-size: 13px; opacity: 0.6; margin-bottom: 16px;">
+                        Reset all settings and data. Useful if you want to uninstall or start fresh.
+                    </div>
+                    <button id="resetAllBtn" class="btn-outline" style="width: 100%; color: #ef4444; border-color: rgba(239, 68, 68, 0.3);">
+                        Reset All Settings & Data
+                    </button>
+                </div>
+
+                <div class="section">
                     <div class="section-label">\u{1F9FE} Logs</div>
                     <div style="display: flex; gap: 12px; margin-bottom: 12px;">
                         <select id="logTailSelect" style="flex: 1; background: rgba(0,0,0,0.3); border: 1px solid var(--border); color: var(--fg); padding: 8px; border-radius: 6px;">
@@ -757,6 +770,14 @@ var require_settings_panel = __commonJS({
                 if (openLogsBtn) openLogsBtn.addEventListener('click', () => vscode.postMessage({ command: 'openLogFile' }));
                 if (clearLogsBtn) clearLogsBtn.addEventListener('click', () => vscode.postMessage({ command: 'clearLogs' }));
                 if (logTailSelect) logTailSelect.addEventListener('change', requestLogs);
+
+                // --- Reset Logic ---
+                const resetAllBtn = document.getElementById('resetAllBtn');
+                if (resetAllBtn) {
+                    resetAllBtn.addEventListener('click', () => {
+                        vscode.postMessage({ command: 'resetAllSettings' });
+                    });
+                }
 
                 if (copyLogsBtn) {
                     copyLogsBtn.addEventListener('click', async () => {
@@ -4660,6 +4681,7 @@ var require_cdp_handler = __commonJS({
                   if (a.description !== void 0) return String(a.description);
                   return "";
                 }).filter(Boolean).join(" ");
+                if (text.includes("[Extension Host]")) return;
                 if (text.includes("[Multi Purpose Agent]")) {
                   const pageTitle = page.title ? ` "${page.title}"` : "";
                   this.log(`${page.id}${pageTitle}: ${text}`);
@@ -4678,7 +4700,9 @@ var require_cdp_handler = __commonJS({
             this.connections.delete(page.id);
             resolve(false);
           });
-          ws.on("close", () => {
+          ws.on("close", (code, reason) => {
+            const pageTitle = page.title ? ` "${page.title}"` : "";
+            this.log(`WebSocket CLOSED: ${page.id}${pageTitle} code=${code} reason=${reason || "none"}`);
             this.connections.delete(page.id);
           });
         });
@@ -5515,6 +5539,7 @@ function getSettingsPanel() {
   return SettingsPanel;
 }
 var GLOBAL_STATE_KEY = "multi-purpose-agent-enabled-global";
+var PRO_STATE_KEY = "multi-purpose-agent-isPro";
 var FREQ_STATE_KEY = "multi-purpose-agent-frequency";
 var BANNED_COMMANDS_KEY = "multi-purpose-agent-banned-commands";
 var ROI_STATS_KEY = "multi-purpose-agent-roi-stats";
@@ -5613,6 +5638,7 @@ var statusBackgroundItem;
 var outputChannel;
 var currentIDE = "unknown";
 var globalContext;
+var lastStatusText = "";
 var cdpHandler;
 var relauncher;
 function log(message) {
@@ -5638,6 +5664,7 @@ function detectIDE() {
   if (appName.toLowerCase().includes("antigravity")) return "Antigravity";
   return "Code";
 }
+var IS_FIRST_RUN_KEY = "multi-purpose-agent-is-first-run-v1";
 async function activate(context) {
   globalContext = context;
   console.log("Multi Purpose Agent Extension: Activator called.");
@@ -5664,7 +5691,22 @@ async function activate(context) {
     console.error("CRITICAL: Failed to create status bar items:", sbError);
   }
   try {
-    isEnabled = context.globalState.get(GLOBAL_STATE_KEY, false);
+    const isFirstRun = !context.globalState.get(IS_FIRST_RUN_KEY, false);
+    if (isFirstRun) {
+      isEnabled = false;
+      await context.globalState.update(GLOBAL_STATE_KEY, false);
+      await context.globalState.update(IS_FIRST_RUN_KEY, true);
+      vscode.window.showInformationMessage(
+        "Multi Purpose Agent installed! Please restart the IDE to complete setup.",
+        "Restart IDE"
+      ).then((selection) => {
+        if (selection === "Restart IDE") {
+          vscode.commands.executeCommand("workbench.action.reloadWindow");
+        }
+      });
+    } else {
+      isEnabled = context.globalState.get(GLOBAL_STATE_KEY, false);
+    }
     isPro = true;
     pollFrequency = context.globalState.get(FREQ_STATE_KEY, 2e3);
     backgroundModeEnabled = context.globalState.get(BACKGROUND_MODE_KEY, false);
@@ -5746,6 +5788,28 @@ async function activate(context) {
         } else {
           vscode.window.showErrorMessage("Failed to load Settings Panel.");
         }
+      }),
+      vscode.commands.registerCommand("multi-purpose-agent.resetSettings", async () => {
+        const choice = await vscode.window.showWarningMessage(
+          "Are you sure you want to reset ALL Multi Purpose Agent settings? This cannot be undone.",
+          { modal: true },
+          "Reset All",
+          "Cancel"
+        );
+        if (choice === "Reset All") {
+          try {
+            await context.globalState.update(GLOBAL_STATE_KEY, void 0);
+            await context.globalState.update(PRO_STATE_KEY, void 0);
+            await context.globalState.update(FREQ_STATE_KEY, void 0);
+            await context.globalState.update(BANNED_COMMANDS_KEY, void 0);
+            await context.globalState.update(ROI_STATS_KEY, void 0);
+            await context.globalState.update(BACKGROUND_MODE_KEY, void 0);
+            await context.globalState.update(IS_FIRST_RUN_KEY, void 0);
+            vscode.window.showInformationMessage("All settings have been reset. Please restart VS Code.");
+          } catch (e) {
+            vscode.window.showErrorMessage(`Reset failed: ${e.message}`);
+          }
+        }
       })
     );
     try {
@@ -5812,9 +5876,10 @@ async function handleToggle(context) {
         "Are you sure you want to turn off Multi Purpose Agent?",
         { modal: true },
         "Turn Off",
+        "Open Prompt Mode",
         "View Dashboard"
       );
-      if (choice === "View Dashboard") {
+      if (choice === "View Dashboard" || choice === "Open Prompt Mode") {
         const panel = getSettingsPanel();
         if (panel) panel.createOrShow(context.extensionUri, context);
         return;
@@ -6169,6 +6234,11 @@ function updateStatusBar() {
     statusBarItem.tooltip = tooltip;
     statusBarItem.backgroundColor = bgColor;
     statusBarItem.command = command;
+    const newStatusText = `ON|${statusText}|bg=${backgroundModeEnabled}`;
+    if (lastStatusText !== newStatusText) {
+      log(`Status changed: "${lastStatusText}" \u2192 "${newStatusText}"`);
+      lastStatusText = newStatusText;
+    }
     if (statusBackgroundItem) {
       if (backgroundModeEnabled) {
         statusBackgroundItem.text = "$(sync~spin) Background: ON";
@@ -6186,6 +6256,11 @@ function updateStatusBar() {
     statusBarItem.tooltip = "Click to enable Multi Purpose Agent.";
     statusBarItem.backgroundColor = new vscode.ThemeColor("statusBarItem.warningBackground");
     statusBarItem.command = "multi-purpose-agent.toggle";
+    const newStatusText = `OFF`;
+    if (lastStatusText !== newStatusText) {
+      log(`Status changed: "${lastStatusText}" \u2192 "${newStatusText}"`);
+      lastStatusText = newStatusText;
+    }
     if (statusBackgroundItem) {
       statusBackgroundItem.hide();
     }
