@@ -28,11 +28,7 @@
         "vscode": "^1.75.0"
     },
     "activationEvents": [
-        "onStartupFinished",
-        "onCommand:multi-purpose-agent.toggle",
-        "onCommand:multi-purpose-agent.openSettings",
-        "onCommand:multi-purpose-agent.toggleBackground",
-        "onCommand:multi-purpose-agent.relaunch"
+        "onStartupFinished"
     ],
     "main": "dist/extension.js",
     "contributes": {

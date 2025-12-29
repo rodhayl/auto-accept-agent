@@ -69,6 +69,19 @@ The extension runs silently. Check the status bar for `Multi Purpose Agent: ON`.
 
 ---
 
+---
+
+## Developer Tools
+
+The extension includes a set of browser-side debugging tools in the `tools/` directory. These are useful for testing ensuring the agent interacts correctly with the DOM.
+
+- **selector_finder.js**: Interactive tool to find unique CSS selectors.
+- **full_agent_test.js**: Runs the full agent logic in the browser console.
+- **overlay_test.js**: Verifies the background status overlay.
+- See `tools/README.md` for full usage instructions.
+
+---
+
 ## Requirements
 
 - Antigravity or Cursor IDE

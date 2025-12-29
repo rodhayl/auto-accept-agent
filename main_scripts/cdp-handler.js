@@ -99,7 +99,7 @@ class CDPHandler {
 
     async stop() {
         this.isEnabled = false;
-        // Fire stop commands in parallel (don't wait for each one)
+        // Fire stop commands in parallel
         const stopPromises = [];
         for (const [pageId] of this.connections) {
             stopPromises.push(
@@ -108,10 +108,10 @@ class CDPHandler {
                 }).catch(() => { }) // Ignore errors
             );
         }
-        // Disconnect immediately, don't wait for commands
+        // Wait for stop commands to complete (with timeout protection from sendCommand)
+        await Promise.allSettled(stopPromises);
+        // Now safe to disconnect
         this.disconnectAll();
-        // Let promises settle in background
-        Promise.allSettled(stopPromises);
     }
 
     async connectToPage(page) {
@@ -229,11 +229,17 @@ class CDPHandler {
 
     sendCommand(pageId, method, params = {}) {
         const conn = this.connections.get(pageId);
-        if (!conn || conn.ws.readyState !== WebSocket.OPEN) return Promise.reject('dead');
+        if (!conn || conn.ws.readyState !== WebSocket.OPEN) return Promise.reject(new Error('connection dead'));
         const id = this.messageId++;
         return new Promise((resolve, reject) => {
-            this.pendingMessages.set(id, { resolve, reject });
-            conn.ws.send(JSON.stringify({ id, method, params }));
+            this.pendingMessages.set(id, { resolve, reject, pageId });
+            try {
+                conn.ws.send(JSON.stringify({ id, method, params }));
+            } catch (e) {
+                this.pendingMessages.delete(id);
+                reject(new Error(`send failed: ${e.message}`));
+                return;
+            }
             setTimeout(() => {
                 if (this.pendingMessages.has(id)) {
                     this.pendingMessages.delete(id);
@@ -265,23 +271,28 @@ class CDPHandler {
     async getStats() {
         const aggregatedStats = { clicks: 0, blocked: 0, fileEdits: 0, terminalCommands: 0, actionsWhileAway: 0 };
 
+        // Parallelize stats collection across all pages
+        const promises = [];
         for (const [pageId] of this.connections) {
-            try {
-                const result = await this.sendCommand(pageId, 'Runtime.evaluate', {
+            promises.push(
+                this.sendCommand(pageId, 'Runtime.evaluate', {
                     expression: '(function(){ if(typeof window !== "undefined" && window.__autoAcceptGetStats) return JSON.stringify(window.__autoAcceptGetStats()); return "{}"; })()',
                     returnByValue: true
-                });
+                }).catch(() => null)
+            );
+        }
 
-                if (result.result?.value) {
+        const results = await Promise.all(promises);
+        for (const result of results) {
+            if (result?.result?.value) {
+                try {
                     const stats = JSON.parse(result.result.value);
                     aggregatedStats.clicks += stats.clicks || 0;
                     aggregatedStats.blocked += stats.blocked || 0;
                     aggregatedStats.fileEdits += stats.fileEdits || 0;
                     aggregatedStats.terminalCommands += stats.terminalCommands || 0;
                     aggregatedStats.actionsWhileAway += stats.actionsWhileAway || 0;
-                }
-            } catch (e) {
-                // Ignore errors for individual pages
+                } catch (e) { }
             }
         }
 
@@ -291,23 +302,28 @@ class CDPHandler {
     async resetStats() {
         const aggregatedStats = { clicks: 0, blocked: 0, fileEdits: 0, terminalCommands: 0, actionsWhileAway: 0 };
 
+        // Parallelize stats reset across all pages
+        const promises = [];
         for (const [pageId] of this.connections) {
-            try {
-                const result = await this.sendCommand(pageId, 'Runtime.evaluate', {
+            promises.push(
+                this.sendCommand(pageId, 'Runtime.evaluate', {
                     expression: '(function(){ if(typeof window !== "undefined" && window.__autoAcceptResetStats) return JSON.stringify(window.__autoAcceptResetStats()); return "{}"; })()',
                     returnByValue: true
-                });
+                }).catch(() => null)
+            );
+        }
 
-                if (result.result?.value) {
+        const results = await Promise.all(promises);
+        for (const result of results) {
+            if (result?.result?.value) {
+                try {
                     const stats = JSON.parse(result.result.value);
                     aggregatedStats.clicks += stats.clicks || 0;
                     aggregatedStats.blocked += stats.blocked || 0;
                     aggregatedStats.fileEdits += stats.fileEdits || 0;
                     aggregatedStats.terminalCommands += stats.terminalCommands || 0;
                     aggregatedStats.actionsWhileAway += stats.actionsWhileAway || 0;
-                }
-            } catch (e) {
-                // Ignore errors for individual pages
+                } catch (e) { }
             }
         }
 
@@ -385,17 +401,20 @@ class CDPHandler {
 
     // Push focus state from extension to browser (more reliable than browser-side detection)
     async setFocusState(isFocused) {
+        // Parallelize focus state push across all pages
+        const promises = [];
         for (const [pageId] of this.connections) {
-            try {
-                await this.sendCommand(pageId, 'Runtime.evaluate', {
+            promises.push(
+                this.sendCommand(pageId, 'Runtime.evaluate', {
                     expression: `(function(){ 
                         if(typeof window !== "undefined" && window.__autoAcceptSetFocusState) {
                             window.__autoAcceptSetFocusState(${isFocused});
                         }
                     })()`
-                });
-            } catch (e) { }
+                }).catch(() => { })
+            );
         }
+        await Promise.all(promises);
         this.log(`Focus state pushed to all pages: ${isFocused}`);
     }
 
@@ -426,7 +445,18 @@ class CDPHandler {
     }
 
     disconnectAll() {
-        for (const [, conn] of this.connections) try { conn.ws.close(); } catch (e) { }
+        // Reject all pending messages to prevent memory leaks
+        for (const [id, pending] of this.pendingMessages) {
+            try {
+                pending.reject(new Error('disconnected'));
+            } catch (e) { }
+        }
+        this.pendingMessages.clear();
+        
+        // Close all WebSocket connections
+        for (const [, conn] of this.connections) {
+            try { conn.ws.close(); } catch (e) { }
+        }
         this.connections.clear();
     }
 }

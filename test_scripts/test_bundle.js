@@ -37,7 +37,8 @@
                 isWindowFocused: true,
                 lastUserActivityAt: Date.now(),
                 lastConversationUrl: null,
-                lastConversationStats: null
+                lastConversationStats: null,
+                lastPollInterval: 1000
             };
         }
 
@@ -164,6 +165,8 @@
                     completionStatus: {},
                     sessionID: 0,
                     currentMode: null,
+                    isBackgroundMode: false,
+                    lastPollInterval: 1000,
                     startTimes: {},
                     bannedCommands: [],
                     isPro: false,
@@ -181,6 +184,9 @@
                 if (s.terminalCommandsThisSession === undefined) s.terminalCommandsThisSession = 0;
                 if (s.lastUserActivityAt === undefined) s.lastUserActivityAt = Date.now();
             }
+            // Ensure state-level tracking fields exist
+            if (window.__autoAcceptState.isBackgroundMode === undefined) window.__autoAcceptState.isBackgroundMode = false;
+            if (window.__autoAcceptState.lastPollInterval === undefined) window.__autoAcceptState.lastPollInterval = 1000;
 
             initializeFocusState(log);
 
@@ -242,17 +248,21 @@
     // Initialize Analytics
     Analytics.initialize(log);
 
-    (function () {
-        const handler = () => {
-            try { Analytics.markUserActivity(); } catch (e) { }
-        };
-        const opts = { capture: true, passive: true };
-        try { window.addEventListener('mousedown', handler, opts); } catch (e) { }
-        try { window.addEventListener('keydown', handler, opts); } catch (e) { }
-        try { window.addEventListener('pointerdown', handler, opts); } catch (e) { }
-        try { window.addEventListener('touchstart', handler, opts); } catch (e) { }
-        try { window.addEventListener('wheel', handler, opts); } catch (e) { }
-    })();
+    // Register user activity listeners ONCE (guard against duplicate registration)
+    if (!window.__autoAcceptListenersRegistered) {
+        window.__autoAcceptListenersRegistered = true;
+        (function () {
+            const handler = () => {
+                try { Analytics.markUserActivity(); } catch (e) { }
+            };
+            const opts = { capture: true, passive: true };
+            try { window.addEventListener('mousedown', handler, opts); } catch (e) { }
+            try { window.addEventListener('keydown', handler, opts); } catch (e) { }
+            try { window.addEventListener('pointerdown', handler, opts); } catch (e) { }
+            try { window.addEventListener('touchstart', handler, opts); } catch (e) { }
+            try { window.addEventListener('wheel', handler, opts); } catch (e) { }
+        })();
+    }
 
     // --- 1. UTILS ---
     const getDocuments = (root = document) => {
@@ -415,7 +425,10 @@
                 Object.assign(overlay.style, { top: r.top + 'px', left: r.left + 'px', width: r.width + 'px', height: r.height + 'px' });
             };
             sync();
-            new ResizeObserver(sync).observe(panel);
+            // Track ResizeObserver so we can disconnect it later
+            const observer = new ResizeObserver(sync);
+            observer.observe(panel);
+            overlay.__resizeObserver = observer;
         } else {
             log('[Overlay] No panel found, skipping overlay creation');
             overlay.remove();
@@ -540,8 +553,20 @@
         const overlay = document.getElementById(OVERLAY_ID);
         if (overlay) {
             log('[Overlay] Hiding overlay...');
+            // Disconnect ResizeObserver to prevent memory leak
+            if (overlay.__resizeObserver) {
+                try { overlay.__resizeObserver.disconnect(); } catch (e) { }
+                overlay.__resizeObserver = null;
+            }
             overlay.classList.remove('visible');
-            setTimeout(() => overlay.remove(), 300);
+            setTimeout(() => {
+                try { overlay.remove(); } catch (e) { }
+            }, 300);
+        }
+        // Also remove styles
+        const styles = document.getElementById(STYLE_ID);
+        if (styles) {
+            try { styles.remove(); } catch (e) { }
         }
     }
 
@@ -874,6 +899,8 @@
     function waitForClickEffect(el, beforeText, timeout = 1500) {
         return new Promise(resolve => {
             const startTime = Date.now();
+            const checkInterval = 75; // Check every 75ms instead of every frame
+            
             const check = () => {
                 if (!isElementVisible(el)) return resolve(true);
 
@@ -887,7 +914,8 @@
                 if (style.pointerEvents === 'none') return resolve(true);
 
                 if (Date.now() - startTime >= timeout) return resolve(false);
-                requestAnimationFrame(check);
+                
+                setTimeout(check, checkInterval);
             };
             setTimeout(check, 50);
         });
@@ -1237,33 +1265,45 @@
             const ide = (config.ide || 'cursor').toLowerCase();
             const isPro = config.isPro !== false;
             const isBG = config.isBackgroundMode === true;
+            const pollInterval = config.pollInterval || 1000;
 
             // Update banned commands from config
             if (config.bannedCommands) {
                 window.__autoAcceptUpdateBannedCommands(config.bannedCommands);
             }
 
-            log(`__autoAcceptStart called: ide=${ide}, isPro=${isPro}, isBG=${isBG}`);
+            log(`__autoAcceptStart called: ide=${ide}, isPro=${isPro}, isBG=${isBG}, poll=${pollInterval}`);
 
             const state = window.__autoAcceptState;
 
-            // Skip restart only if EXACTLY the same config
-            if (state.isRunning && state.currentMode === ide && state.isBackgroundMode === isBG) {
-                log(`Already running with same config, skipping`);
+            // Skip restart if EXACTLY the same config AND already running
+            // This is critical - extension calls start() every 5 seconds, we must NOT restart the loop
+            if (state.isRunning && state.currentMode === ide && state.isBackgroundMode === isBG && state.lastPollInterval === pollInterval) {
+                log(`Already running with same config, skipping restart`);
                 return;
             }
 
-            // Stop previous loop if switching
+            // If only poll interval changed but loop is running, just update without restart
+            if (state.isRunning && state.currentMode === ide && state.isBackgroundMode === isBG) {
+                log(`Config unchanged except poll interval, updating without restart`);
+                state.lastPollInterval = pollInterval;
+                return;
+            }
+
+            // Stop previous loop if switching modes - old loop will terminate on next iteration
+            // when it checks sessionID (which we increment below)
             if (state.isRunning) {
-                log(`Stopping previous session...`);
-                state.isRunning = false;
+                log(`Stopping previous session to switch modes...`);
+                // Don't set isRunning=false here - the sessionID change will terminate the old loop
             }
 
             state.isRunning = true;
             state.currentMode = ide;
             state.isBackgroundMode = isBG;
+            state.lastPollInterval = pollInterval;
             state.sessionID++;
             const sid = state.sessionID;
+            log(`Starting new session: sid=${sid}`);
 
             // Initialize session start time if not set (for stats tracking)
             if (!state.stats.sessionStartTime) {
@@ -1285,12 +1325,23 @@
                 else antigravityLoop(sid);
             } else {
                 hideOverlay();
-                log(`Starting static poll loop...`);
+                log(`Starting static poll loop with interval ${pollInterval}ms...`);
                 (async function staticLoop() {
+                    let cycle = 0;
                     while (state.isRunning && state.sessionID === sid) {
-                        performClick(['button', 'div[role="button"]', '[aria-label*="Accept"]', '[aria-label*="Run"]', '[title*="Accept"]', '[title*="Run"]', '[class*="button"]', '[class*="anysphere"]']);
-                        await new Promise(r => setTimeout(r, config.pollInterval || 1000));
+                        cycle++;
+                        try {
+                            const clicked = await performClick(['button', 'div[role="button"]', '[aria-label*="Accept"]', '[aria-label*="Run"]', '[title*="Accept"]', '[title*="Run"]', '[class*="button"]', '[class*="anysphere"]']);
+                            if (clicked > 0) {
+                                log(`[Static] Cycle ${cycle}: Clicked ${clicked} buttons`);
+                            }
+                        } catch (e) {
+                            log(`[Static] Cycle ${cycle}: Error - ${e.message}`);
+                        }
+                        await new Promise(r => setTimeout(r, pollInterval));
                     }
+                    const stopReason = !state.isRunning ? 'isRunning=false' : `sessionID changed (expected ${sid}, got ${state.sessionID})`;
+                    log(`[Static] Loop STOPPED - reason: ${stopReason}`);
                 })();
             }
         } catch (e) {

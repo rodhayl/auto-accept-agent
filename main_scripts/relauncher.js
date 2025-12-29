@@ -34,6 +34,16 @@ class Relauncher {
         this.log(msg);
     }
 
+    // Sanitize path for safe PowerShell interpolation
+    // Escapes single quotes, backticks, and $ to prevent injection
+    sanitizePathForPS(filePath) {
+        if (!filePath) return '';
+        return filePath
+            .replace(/'/g, "''")
+            .replace(/`/g, '``')
+            .replace(/\$/g, '`$');
+    }
+
     // check if cdp is already running
     async isCDPRunning(port = BASE_CDP_PORT) {
         return new Promise((resolve) => {
@@ -104,13 +114,20 @@ class Relauncher {
 
     async _readWindowsShortcut(shortcutPath) {
         const scriptPath = path.join(os.tmpdir(), 'multi_purpose_agent_read_shortcut.ps1');
+        const safePath = this.sanitizePathForPS(shortcutPath);
 
         try {
             const psScript = `
 $ErrorActionPreference = "Stop"
 try {
     $shell = New-Object -ComObject WScript.Shell
-    $shortcut = $shell.CreateShortcut('${shortcutPath.replace(/'/g, "''")}')
+    $shortcut = $shell.CreateShortcut('${safePath}')
+    Write-Output "ARGS:$($shortcut.Arguments)"
+    Write-Output "TARGET:$($shortcut.TargetPath)"
+} catch {
+    Write-Output "ERROR:$($_.Exception.Message)"
+}
+`;
     Write-Output "ARGS:$($shortcut.Arguments)"
     Write-Output "TARGET:$($shortcut.TargetPath)"
 } catch {
@@ -225,6 +242,7 @@ try {
 
     async _modifyWindowsShortcut(shortcutPath) {
         const scriptPath = path.join(os.tmpdir(), 'multi_purpose_agent_modify_shortcut.ps1');
+        const safePath = this.sanitizePathForPS(shortcutPath);
 
         try {
             // Write PowerShell script to temp file to avoid escaping issues
@@ -232,7 +250,7 @@ try {
 $ErrorActionPreference = "Stop"
 try {
     $shell = New-Object -ComObject WScript.Shell
-    $shortcut = $shell.CreateShortcut('${shortcutPath.replace(/'/g, "''")}')
+    $shortcut = $shell.CreateShortcut('${safePath}')
     
     Write-Output "BEFORE_ARGS:$($shortcut.Arguments)"
     Write-Output "TARGET:$($shortcut.TargetPath)"
