@@ -2,23 +2,23 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 
-const SCRIPT_PATH = path.join(__dirname, '..', 'main_scripts', 'auto_accept.js');
+// Use the main bundle which contains isAcceptButton
+const SCRIPT_PATH = path.join(__dirname, '..', 'main_scripts', 'full_cdp_script.js');
 
 console.log('=== RUNNING ALWAYS ALLOW DETECTION TEST ===');
 
 try {
     let code = fs.readFileSync(SCRIPT_PATH, 'utf8');
 
-    // Mock imports and exports
-    code = code.replace(/import \* as utils from '\.\/utils\.js';/g, 'const utils = { assert: () => {} };');
-    code = code.replace(/export function/g, 'function');
-    
-    // Add logic to expose isAcceptButton
+    // Add export of isAcceptButton for testing
     code += '\n\nglobal.isAcceptButton = isAcceptButton;';
 
     const sandbox = {
         global: {},
         window: {
+            __autoAcceptState: { enabled: false, logCallback: () => { } },
+            addEventListener: () => { },
+            dispatchEvent: () => { },
             getComputedStyle: () => ({
                 display: 'block',
                 visibility: 'visible',
@@ -26,9 +26,19 @@ try {
                 pointerEvents: 'auto'
             })
         },
-        console: console
+        document: {
+            hidden: false,
+            addEventListener: () => { },
+            querySelectorAll: () => [],
+            querySelector: () => null
+        },
+        console: console,
+        setTimeout: () => { },
+        clearInterval: () => { },
+        setInterval: () => 0,
+        CustomEvent: class CustomEvent { constructor() { } }
     };
-    
+
     // Mock Element class
     class MockElement {
         constructor(text) {
@@ -38,11 +48,11 @@ try {
                 defaultView: sandbox.window
             };
         }
-        
+
         getBoundingClientRect() {
             return { width: 10, height: 10 };
         }
-        
+
         hasAttribute() { return false; }
     }
     sandbox.window.Element = MockElement;
@@ -58,7 +68,7 @@ try {
         { text: 'Always Allow', expected: true },
         { text: 'always allow', expected: true },
         { text: 'Allow Once', expected: true },
-        { text: 'Allow', expected: false }, // "Allow" is NOT in auto_accept.js patterns
+        { text: 'Allow', expected: false }, // "Allow" is NOT in patterns
         { text: 'Cancel', expected: false },
         { text: 'Run', expected: true },
         { text: "Don't Allow", expected: false },

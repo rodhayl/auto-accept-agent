@@ -10,12 +10,19 @@ All notable changes to this project will be documented in this file.
 - **Enhanced Dialog Options**: Added "Open Prompt Mode" and "View Dashboard" quick actions to the "Turn Off" warning and "Version 7.0" notification dialogs.
 - **Background Mode Navigation**: Added "Enable Background Mode" option directly to the "Version 7.0" notification.
 - **Test Infrastructure**: Added `test_dialogs_verification.js` to verify UI dialog options and `test_scheduler_safeguard.js` to verify prompt serialization.
+- **Dev Tools Directory**: Created `tools/` folder with browser-only debugging scripts and README.
 
 ### Verified
 - **Retry Mechanism**: Verified existence of "Retry" button handling in `isAcceptButton` logic across `test_bundle.js` and `full_cdp_script.js`, ensuring agent auto-recovers from failures.
 
 ### Fixed
 - **Duplicate Cancel Buttons**: Removed redundant "Cancel" buttons from the "Turn Off" warning and "Background Mode" confirmation dialogs to prevent UI confusion.
+
+### Removed (Code Cleanup)
+- **Dead Code**: Deleted 5 unused files: `main.js`, `original_main.js`, `simple_poll.js`, `antigravity_background_poll.js`, `test_bundle.js` (~1,500 lines)
+- **Duplicate Modules**: Consolidated `analytics/`, `overlay.js`, `auto_accept.js`, `utils.js` into `full_cdp_script.js` bundle (~640 lines of duplicates removed)
+- **Log Files**: Removed generated log files from repository
+- **Proper .gitignore**: Added entries for node_modules, dist, *.vsix, *.log, and OS files
 
 ## [7.1.2] - 2025-12-28 (Since e78a8d3)
 

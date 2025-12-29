@@ -801,8 +801,8 @@
     function isAcceptButton(el) {
         const text = ((el.textContent || el.getAttribute?.('aria-label') || el.getAttribute?.('title') || "") + '').trim().toLowerCase();
         if (text.length === 0 || text.length > 160) return false;
-        const patterns = ['accept', 'run', 'retry', 'apply', 'execute', 'confirm', 'allow once', 'allow', 'continue', 'proceed', 'approve'];
-        const rejects = ['skip', 'reject', 'cancel', 'close', 'refine', 'deny', 'fix all remaining issues', 'fix all remaining', 'fix all'];
+        const patterns = ['accept', 'run', 'retry', 'apply', 'execute', 'confirm', 'allow once', 'allow', 'continue', 'proceed', 'approve', 'always allow'];
+        const rejects = ['skip', 'reject', 'cancel', 'close', 'refine', 'deny', 'fix all remaining issues', 'fix all remaining', 'fix all', "don't", 'not now'];
         if (rejects.some(r => text.includes(r))) return false;
         if (!patterns.some(p => text.includes(p))) return false;
 
@@ -955,62 +955,69 @@
         let index = 0;
         let cycle = 0;
         while (window.__autoAcceptState.isRunning && window.__autoAcceptState.sessionID === sid) {
-            cycle++;
-            log(`[Loop] Cycle ${cycle}: Starting...`);
+            try {
+                cycle++;
+                log(`[Loop] Cycle ${cycle}: Starting...`);
 
-            const roots = getInteractionRoots();
-            if (roots.length === 0) {
-                await new Promise(r => setTimeout(r, 1500));
-                continue;
-            }
-
-            const clicked = await performClick(['button', 'div[role="button"]', '[aria-label*="Accept"]', '[aria-label*="Run"]', '[title*="Accept"]', '[title*="Run"]', '[class*="button"]', '[class*="anysphere"]']);
-            log(`[Loop] Cycle ${cycle}: Clicked ${clicked} buttons`);
-
-            await new Promise(r => setTimeout(r, 800));
-
-            const isAway = (Analytics && typeof Analytics.isUserAway === 'function') ? Analytics.isUserAway() : false;
-
-            const tabSelectors = [
-                'ul[role="tablist"] li[role="tab"]',
-                '[role="tablist"] [role="tab"]',
-                '.chat-session-item'
-            ];
-
-            let tabs = [];
-            for (const selector of tabSelectors) {
-                tabs = queryAllInInteractionRoots(selector).filter(t => isElementVisible(t));
-                if (tabs.length > 0) {
-                    log(`[Loop] Cycle ${cycle}: Found ${tabs.length} tabs using selector: ${selector}`);
-                    break;
+                const roots = getInteractionRoots();
+                if (roots.length === 0) {
+                    await new Promise(r => setTimeout(r, 1500));
+                    continue;
                 }
+
+                const clicked = await performClick(['button', 'div[role="button"]', '[aria-label*="Accept"]', '[aria-label*="Run"]', '[title*="Accept"]', '[title*="Run"]', '[class*="button"]', '[class*="anysphere"]']);
+                log(`[Loop] Cycle ${cycle}: Clicked ${clicked} buttons`);
+
+                await new Promise(r => setTimeout(r, 800));
+
+                const isAway = (Analytics && typeof Analytics.isUserAway === 'function') ? Analytics.isUserAway() : false;
+
+                const tabSelectors = [
+                    'ul[role="tablist"] li[role="tab"]',
+                    '[role="tablist"] [role="tab"]',
+                    '.chat-session-item'
+                ];
+
+                let tabs = [];
+                for (const selector of tabSelectors) {
+                    tabs = queryAllInInteractionRoots(selector).filter(t => isElementVisible(t));
+                    if (tabs.length > 0) {
+                        log(`[Loop] Cycle ${cycle}: Found ${tabs.length} tabs using selector: ${selector}`);
+                        break;
+                    }
+                }
+
+                if (tabs.length === 0) {
+                    log(`[Loop] Cycle ${cycle}: No tabs found in any known locations.`);
+                }
+
+                updateTabNames(tabs);
+
+                if (isAway && tabs.length > 0) {
+                    const targetTab = tabs[index % tabs.length];
+                    const tabLabel = targetTab.getAttribute('aria-label') || targetTab.textContent?.trim() || 'unnamed tab';
+                    log(`[Loop] Cycle ${cycle}: Clicking tab "${tabLabel}"`);
+                    targetTab.dispatchEvent(new MouseEvent('click', { view: window, bubbles: true, cancelable: true }));
+                    index++;
+                } else if (!isAway) {
+                    log(`[Loop] Cycle ${cycle}: User focused, skipping tab rotation`);
+                }
+
+                const state = window.__autoAcceptState;
+                log(`[Loop] Cycle ${cycle}: State = { tabs: ${state.tabNames?.length || 0}, isRunning: ${state.isRunning}, sid: ${state.sessionID} }`);
+
+                updateOverlay();
+                log(`[Loop] Cycle ${cycle}: Overlay updated, waiting 3s...`);
+
+                await new Promise(r => setTimeout(r, 3000));
+            } catch (err) {
+                log(`[Loop] ERROR in cycle ${cycle}: ${err.message}`);
+                await new Promise(r => setTimeout(r, 2000));
             }
-
-            if (tabs.length === 0) {
-                log(`[Loop] Cycle ${cycle}: No tabs found in any known locations.`);
-            }
-
-            updateTabNames(tabs);
-
-            if (isAway && tabs.length > 0) {
-                const targetTab = tabs[index % tabs.length];
-                const tabLabel = targetTab.getAttribute('aria-label') || targetTab.textContent?.trim() || 'unnamed tab';
-                log(`[Loop] Cycle ${cycle}: Clicking tab "${tabLabel}"`);
-                targetTab.dispatchEvent(new MouseEvent('click', { view: window, bubbles: true, cancelable: true }));
-                index++;
-            } else if (!isAway) {
-                log(`[Loop] Cycle ${cycle}: User focused, skipping tab rotation`);
-            }
-
-            const state = window.__autoAcceptState;
-            log(`[Loop] Cycle ${cycle}: State = { tabs: ${state.tabNames?.length || 0}, isRunning: ${state.isRunning}, sid: ${state.sessionID} }`);
-
-            updateOverlay();
-            log(`[Loop] Cycle ${cycle}: Overlay updated, waiting 3s...`);
-
-            await new Promise(r => setTimeout(r, 3000));
         }
-        log('[Loop] cursorLoop STOPPED');
+        // Log specific stop reason
+        const stopReason = !window.__autoAcceptState.isRunning ? 'isRunning=false' : `sessionID changed (expected ${sid}, got ${window.__autoAcceptState.sessionID})`;
+        log(`[Loop] cursorLoop STOPPED - reason: ${stopReason}`);
     }
 
     async function antigravityLoop(sid) {
@@ -1018,96 +1025,103 @@
         let index = 0;
         let cycle = 0;
         while (window.__autoAcceptState.isRunning && window.__autoAcceptState.sessionID === sid) {
-            cycle++;
-            log(`[Loop] Cycle ${cycle}: Starting...`);
+            try {
+                cycle++;
+                log(`[Loop] Cycle ${cycle}: Starting...`);
 
-            const roots = getInteractionRoots();
-            if (roots.length === 0) {
-                await new Promise(r => setTimeout(r, 1500));
-                continue;
-            }
-
-            const isAway = (Analytics && typeof Analytics.isUserAway === 'function') ? Analytics.isUserAway() : false;
-
-            // FIRST: Check for completion badges (Good/Bad) for logging, but DON'T block clicking
-            // The presence of an "Accept" button is the authoritative signal that action is needed.
-            const allSpans = queryAllInInteractionRoots('span');
-            const feedbackBadges = allSpans.filter(s => {
-                const t = s.textContent.trim();
-                return t === 'Good' || t === 'Bad';
-            });
-            const hasBadge = feedbackBadges.length > 0;
-
-            log(`[Loop] Cycle ${cycle}: Found ${feedbackBadges.length} Good/Bad badges`);
-
-            // Always try to click if buttons are present
-            let clicked = 0;
-            // Expanded selectors to be more robust against UI changes
-            clicked = await performClick(['.bg-ide-button-background', 'button', 'div[role="button"]', '[aria-label*="Accept"]', '[aria-label*="Run"]', '[title*="Accept"]', '[title*="Run"]', '[class*="button"]']);
-            
-            if (clicked > 0) {
-                log(`[Loop] Cycle ${cycle}: Clicked ${clicked} accept buttons`);
-            } else if (hasBadge) {
-                log(`[Loop] Cycle ${cycle}: No buttons found and conversation seems done (has badge)`);
-            }
-
-
-            await new Promise(r => setTimeout(r, 800));
-
-            let clickedTabName = null;
-            if (isAway) {
-                const nt = queryAllInInteractionRoots("[data-tooltip-id='new-conversation-tooltip']")[0];
-                if (nt) {
-                    log(`[Loop] Cycle ${cycle}: Clicking New Tab button`);
-                    nt.click();
+                const roots = getInteractionRoots();
+                if (roots.length === 0) {
+                    await new Promise(r => setTimeout(r, 1500));
+                    continue;
                 }
-                await new Promise(r => setTimeout(r, 1000));
 
-                const tabsAfter = queryAllInInteractionRoots('button.grow');
-                log(`[Loop] Cycle ${cycle}: Found ${tabsAfter.length} tabs`);
-                updateTabNames(tabsAfter);
+                const isAway = (Analytics && typeof Analytics.isUserAway === 'function') ? Analytics.isUserAway() : false;
 
-                if (tabsAfter.length > 0) {
-                    const targetTab = tabsAfter[index % tabsAfter.length];
-                    clickedTabName = stripTimeSuffix(targetTab.textContent);
-                    log(`[Loop] Cycle ${cycle}: Clicking tab "${clickedTabName}"`);
-                    targetTab.dispatchEvent(new MouseEvent('click', { view: window, bubbles: true, cancelable: true }));
-                    index++;
-                }
-            } else {
-                const tabsAfter = queryAllInInteractionRoots('button.grow');
-                log(`[Loop] Cycle ${cycle}: Found ${tabsAfter.length} tabs`);
-                updateTabNames(tabsAfter);
-                log(`[Loop] Cycle ${cycle}: User focused, skipping tab rotation`);
-            }
-
-            // Wait longer for content to load (1.5s instead of 0.5s)
-            await new Promise(r => setTimeout(r, 1500));
-
-            const allSpansAfter = queryAllInInteractionRoots('span');
-            const feedbackTexts = allSpansAfter
-                .filter(s => {
+                // FIRST: Check for completion badges (Good/Bad) for logging, but DON'T block clicking
+                // The presence of an "Accept" button is the authoritative signal that action is needed.
+                const allSpans = queryAllInInteractionRoots('span');
+                const feedbackBadges = allSpans.filter(s => {
                     const t = s.textContent.trim();
                     return t === 'Good' || t === 'Bad';
-                })
-                .map(s => s.textContent.trim());
+                });
+                const hasBadge = feedbackBadges.length > 0;
 
-            log(`[Loop] Cycle ${cycle}: Found ${feedbackTexts.length} Good/Bad badges`);
+                log(`[Loop] Cycle ${cycle}: Found ${feedbackBadges.length} Good/Bad badges`);
 
-            if (clickedTabName && feedbackTexts.length > 0) {
-                updateConversationCompletionState(clickedTabName, 'done');
-            } else if (clickedTabName && !window.__autoAcceptState.completionStatus[clickedTabName]) {
+                // Always try to click if buttons are present
+                let clicked = 0;
+                // Expanded selectors to be more robust against UI changes
+                clicked = await performClick(['.bg-ide-button-background', 'button', 'div[role="button"]', '[aria-label*="Accept"]', '[aria-label*="Run"]', '[title*="Accept"]', '[title*="Run"]', '[class*="button"]']);
+
+                if (clicked > 0) {
+                    log(`[Loop] Cycle ${cycle}: Clicked ${clicked} accept buttons`);
+                } else if (hasBadge) {
+                    log(`[Loop] Cycle ${cycle}: No buttons found and conversation seems done (has badge)`);
+                }
+
+
+                await new Promise(r => setTimeout(r, 800));
+
+                let clickedTabName = null;
+                if (isAway) {
+                    const nt = queryAllInInteractionRoots("[data-tooltip-id='new-conversation-tooltip']")[0];
+                    if (nt) {
+                        log(`[Loop] Cycle ${cycle}: Clicking New Tab button`);
+                        nt.click();
+                    }
+                    await new Promise(r => setTimeout(r, 1000));
+
+                    const tabsAfter = queryAllInInteractionRoots('button.grow');
+                    log(`[Loop] Cycle ${cycle}: Found ${tabsAfter.length} tabs`);
+                    updateTabNames(tabsAfter);
+
+                    if (tabsAfter.length > 0) {
+                        const targetTab = tabsAfter[index % tabsAfter.length];
+                        clickedTabName = stripTimeSuffix(targetTab.textContent);
+                        log(`[Loop] Cycle ${cycle}: Clicking tab "${clickedTabName}"`);
+                        targetTab.dispatchEvent(new MouseEvent('click', { view: window, bubbles: true, cancelable: true }));
+                        index++;
+                    }
+                } else {
+                    const tabsAfter = queryAllInInteractionRoots('button.grow');
+                    log(`[Loop] Cycle ${cycle}: Found ${tabsAfter.length} tabs`);
+                    updateTabNames(tabsAfter);
+                    log(`[Loop] Cycle ${cycle}: User focused, skipping tab rotation`);
+                }
+
+                // Wait longer for content to load (1.5s instead of 0.5s)
+                await new Promise(r => setTimeout(r, 1500));
+
+                const allSpansAfter = queryAllInInteractionRoots('span');
+                const feedbackTexts = allSpansAfter
+                    .filter(s => {
+                        const t = s.textContent.trim();
+                        return t === 'Good' || t === 'Bad';
+                    })
+                    .map(s => s.textContent.trim());
+
+                log(`[Loop] Cycle ${cycle}: Found ${feedbackTexts.length} Good/Bad badges`);
+
+                if (clickedTabName && feedbackTexts.length > 0) {
+                    updateConversationCompletionState(clickedTabName, 'done');
+                } else if (clickedTabName && !window.__autoAcceptState.completionStatus[clickedTabName]) {
+                }
+
+                const state = window.__autoAcceptState;
+                log(`[Loop] Cycle ${cycle}: State = { tabs: ${state.tabNames?.length || 0}, completions: ${JSON.stringify(state.completionStatus)} }`);
+
+                updateOverlay();
+                log(`[Loop] Cycle ${cycle}: Overlay updated, waiting 3s...`);
+
+                await new Promise(r => setTimeout(r, 3000));
+            } catch (err) {
+                log(`[Loop] ERROR in cycle ${cycle}: ${err.message}`);
+                await new Promise(r => setTimeout(r, 2000));
             }
-
-            const state = window.__autoAcceptState;
-            log(`[Loop] Cycle ${cycle}: State = { tabs: ${state.tabNames?.length || 0}, completions: ${JSON.stringify(state.completionStatus)} }`);
-
-            updateOverlay();
-            log(`[Loop] Cycle ${cycle}: Overlay updated, waiting 3s...`);
-
-            await new Promise(r => setTimeout(r, 3000));
         }
-        log('[Loop] antigravityLoop STOPPED');
+        // Log specific stop reason
+        const stopReason = !window.__autoAcceptState.isRunning ? 'isRunning=false' : `sessionID changed (expected ${sid}, got ${window.__autoAcceptState.sessionID})`;
+        log(`[Loop] antigravityLoop STOPPED - reason: ${stopReason}`);
     }
 
     // --- 5. LIFECYCLE API ---
@@ -1157,16 +1171,16 @@
     // --- Send Prompt (CDP) ---
     window.__autoAcceptSendPrompt = function (text) {
         log(`[Prompt] Received request to send: "${text}"`);
-        
+
         // Strategy 1: Find typical chat input boxes
         const selectors = [
-            'textarea[placeholder*="Ask"]', 
-            'textarea[placeholder*="Type"]', 
-            'div[contenteditable="true"]', 
+            'textarea[placeholder*="Ask"]',
+            'textarea[placeholder*="Type"]',
+            'div[contenteditable="true"]',
             'div.full-input-box',
             'textarea'
         ];
-        
+
         let inputBox = null;
         for (const sel of selectors) {
             const els = queryAll(sel);
@@ -1183,10 +1197,10 @@
         }
 
         log('[Prompt] Found input box, simulating typing...');
-        
+
         // Focus and set value
         inputBox.focus();
-        
+
         // Handle React/contenteditable
         if (inputBox.tagName === 'TEXTAREA') {
             const nativeTextAreaValueSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, "value").set;
@@ -1202,7 +1216,7 @@
             log('[Prompt] Attempting to send...');
             // Try Enter key first
             inputBox.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true }));
-            
+
             // Or look for send button
             setTimeout(() => {
                 const sendSelectors = ['button[aria-label*="Send"]', 'button[title*="Send"]', 'div[class*="send-button"]'];

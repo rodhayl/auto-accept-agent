@@ -1,383 +1,383 @@
 === BACKGROUND MODE TEST SUITE ===
-Started: 2025-12-29T08:49:10.053Z
+Started: 2025-12-29T13:58:25.132Z
 
-[08:49:10] 
-[08:49:10] ============================================================
-[08:49:10]   1. SCRIPT LOADING & SYNTAX
-[08:49:10] ============================================================
-[08:49:10] ✓ PASS: Script file exists - C:\Users\rulfe\GitHub\auto-accept-agent\main_scripts\full_cdp_script.js
-[08:49:10] ✓ PASS: Script syntax is valid
-[08:49:10] ✓ PASS: Script length reasonable - 53012 bytes
-[08:49:10] ✓ PASS: Script contains IIFE wrapper
-[08:49:10] ✓ PASS: Script uses strict mode
-[08:49:10] 
-[08:49:10] ============================================================
-[08:49:10]   2. SANDBOX EXECUTION
-[08:49:10] ============================================================
-[08:49:10]   [Script] [Multi Purpose Agent] [Analytics] State initialized
-[08:49:10]   [Script] [Multi Purpose Agent] [Focus] Initialized (awaiting extension sync)
-[08:49:10]   [Script] [Multi Purpose Agent] [Analytics] Initialized
-[08:49:10]   [Script] [Multi Purpose Agent] Core Bundle Initialized.
-[08:49:10] ✓ PASS: Script executes without error
-[08:49:10] 
-[08:49:10] ============================================================
-[08:49:10]   3. API EXPOSURE
-[08:49:10] ============================================================
-[08:49:10] ✓ PASS: __autoAcceptStart is a function
-[08:49:10] ✓ PASS: __autoAcceptStop is a function
-[08:49:10] ✓ PASS: __autoAcceptState is initialized
-[08:49:10] ✓ PASS: State has all required properties - ["isRunning","tabNames","completionStatus","sessionID","currentMode","startTimes","bannedCommands","isPro","stats"]
-[08:49:10] ✓ PASS: Initial state values correct
-[08:49:10] 
-[08:49:10] ============================================================
-[08:49:10]   4. BACKGROUND MODE - CURSOR
-[08:49:10] ============================================================
-[08:49:10]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=true
-[08:49:10]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: true, isPro: true)
-[08:49:10]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
-[08:49:10]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
-[08:49:10]   [Script] [Multi Purpose Agent] [Overlay] Styles injected
-[08:49:10]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
-[08:49:10]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
-[08:49:10]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting cursor loop...
-[08:49:10]   [Script] [Multi Purpose Agent] [Loop] cursorLoop STARTED
-[08:49:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
-[08:49:10] ✓ PASS: Start background mode (Cursor) - isRunning=true
-[08:49:10] ✓ PASS: Session ID incremented - sessionID=1
-[08:49:10] ✓ PASS: Current mode set to cursor - currentMode=cursor
-[08:49:10] ✓ PASS: isBackgroundMode flag set
-[08:49:10]   [Script] [Multi Purpose Agent] Agent Stopped.
-[08:49:10] ✓ PASS: Stop background mode - isRunning=false
-[08:49:10] 
-[08:49:10] ============================================================
-[08:49:10]   5. BACKGROUND MODE - ANTIGRAVITY
-[08:49:10] ============================================================
-[08:49:10]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=antigravity, isPro=true, isBG=true
-[08:49:10]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: antigravity, BG: true, isPro: true)
-[08:49:10]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
-[08:49:10]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
-[08:49:10]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
-[08:49:10]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
-[08:49:10]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting antigravity loop...
-[08:49:10]   [Script] [Multi Purpose Agent] [Loop] antigravityLoop STARTED
-[08:49:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
-[08:49:10] ✓ PASS: Start background mode (Antigravity)
-[08:49:10]   [Script] [Multi Purpose Agent] Agent Stopped.
-[08:49:10] 
-[08:49:10] ============================================================
-[08:49:10]   6. NON-BACKGROUND (SIMPLE) MODE
-[08:49:10] ============================================================
-[08:49:10]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=false, isBG=false
-[08:49:10]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: false, isPro: false)
-[08:49:10]   [Script] [Multi Purpose Agent] Starting static poll loop...
-[08:49:10] ✓ PASS: Start simple mode
-[08:49:10] ✓ PASS: Simple mode isBackgroundMode=false
-[08:49:10]   [Script] [Multi Purpose Agent] Agent Stopped.
-[08:49:10] 
-[08:49:10] ============================================================
-[08:49:10]   7. MODE SWITCHING
-[08:49:10] ============================================================
-[08:49:10]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=false, isBG=false
-[08:49:10]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: false, isPro: false)
-[08:49:10]   [Script] [Multi Purpose Agent] Starting static poll loop...
-[08:49:10]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=true
-[08:49:10]   [Script] [Multi Purpose Agent] Stopping previous session...
-[08:49:10]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: true, isPro: true)
-[08:49:10]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
-[08:49:10]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
-[08:49:10]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
-[08:49:10]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
-[08:49:10]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting cursor loop...
-[08:49:10]   [Script] [Multi Purpose Agent] [Loop] cursorLoop STARTED
-[08:49:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
-[08:49:10] ✓ PASS: Mode switch increments session - 4 -> 5
-[08:49:10]   [Script] [Multi Purpose Agent] Agent Stopped.
-[08:49:10]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=true
-[08:49:10]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: true, isPro: true)
-[08:49:10]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
-[08:49:10]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
-[08:49:10]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
-[08:49:10]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
-[08:49:10]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting cursor loop...
-[08:49:10]   [Script] [Multi Purpose Agent] [Loop] cursorLoop STARTED
-[08:49:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
-[08:49:10]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=antigravity, isPro=true, isBG=true
-[08:49:10]   [Script] [Multi Purpose Agent] Stopping previous session...
-[08:49:10]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: antigravity, BG: true, isPro: true)
-[08:49:10]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
-[08:49:10]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
-[08:49:10]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
-[08:49:10]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
-[08:49:10]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting antigravity loop...
-[08:49:10]   [Script] [Multi Purpose Agent] [Loop] antigravityLoop STARTED
-[08:49:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
-[08:49:10] ✓ PASS: IDE switch increments session - cursor -> antigravity
-[08:49:10]   [Script] [Multi Purpose Agent] Agent Stopped.
-[08:49:10] 
-[08:49:10] ============================================================
-[08:49:10]   8. IDEMPOTENCY
-[08:49:10] ============================================================
-[08:49:10]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=true
-[08:49:10]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: true, isPro: true)
-[08:49:10]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
-[08:49:10]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
-[08:49:10]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
-[08:49:10]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
-[08:49:10]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting cursor loop...
-[08:49:10]   [Script] [Multi Purpose Agent] [Loop] cursorLoop STARTED
-[08:49:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
-[08:49:10]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=true
-[08:49:10]   [Script] [Multi Purpose Agent] Already running with same config, skipping
-[08:49:10] ✓ PASS: Same config is idempotent - sid stayed at 8
-[08:49:10]   [Script] [Multi Purpose Agent] Agent Stopped.
-[08:49:10]   [Script] [Multi Purpose Agent] Agent Stopped.
-[08:49:10]   [Script] [Multi Purpose Agent] Agent Stopped.
-[08:49:10]   [Script] [Multi Purpose Agent] Agent Stopped.
-[08:49:10] ✓ PASS: Multiple stops are safe
-[08:49:10] 
-[08:49:10] ============================================================
-[08:49:10]   9. EDGE CASES - CONFIG HANDLING
-[08:49:10] ============================================================
-[08:49:10]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=false
-[08:49:10]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: false, isPro: true)
-[08:49:10]   [Script] [Multi Purpose Agent] Starting static poll loop...
-[08:49:10] ✓ PASS: Empty config handled
-[08:49:10]   [Script] [Multi Purpose Agent] Agent Stopped.
-[08:49:10]   [Script] [Multi Purpose Agent] ERROR in __autoAcceptStart: Cannot read properties of undefined (reading 'ide')
-[08:49:10]   [Script ERROR] [Multi Purpose Agent] Start error: TypeError: Cannot read properties of undefined (reading 'ide')
-[08:49:10] ✓ PASS: Undefined config handled gracefully - Script did not crash
-[08:49:10]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=true
-[08:49:10]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: true, isPro: true)
-[08:49:10]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
-[08:49:10]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
-[08:49:10]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
-[08:49:10]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
-[08:49:10]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting cursor loop...
-[08:49:10]   [Script] [Multi Purpose Agent] [Loop] cursorLoop STARTED
-[08:49:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
-[08:49:10] ✓ PASS: Null IDE handled
-[08:49:10]   [Script] [Multi Purpose Agent] Agent Stopped.
-[08:49:10]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=unknown_ide, isPro=true, isBG=true
-[08:49:10]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: unknown_ide, BG: true, isPro: true)
-[08:49:10]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
-[08:49:10]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
-[08:49:10]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
-[08:49:10]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
-[08:49:10]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting unknown_ide loop...
-[08:49:10]   [Script] [Multi Purpose Agent] [Loop] antigravityLoop STARTED
-[08:49:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
-[08:49:10] ✓ PASS: Unknown IDE handled gracefully
-[08:49:10]   [Script] [Multi Purpose Agent] Agent Stopped.
-[08:49:10]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=true
-[08:49:10]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: true, isPro: true)
-[08:49:10]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
-[08:49:10]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
-[08:49:10]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
-[08:49:10]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
-[08:49:10]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting cursor loop...
-[08:49:10]   [Script] [Multi Purpose Agent] [Loop] cursorLoop STARTED
-[08:49:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
-[08:49:10] ✓ PASS: IDE name case insensitive
-[08:49:10]   [Script] [Multi Purpose Agent] Agent Stopped.
-[08:49:10] 
-[08:49:10] ============================================================
-[08:49:10]   10. EDGE CASES - FREE TIER
-[08:49:10] ============================================================
-[08:49:10]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=false, isBG=true
-[08:49:10]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: true, isPro: false)
-[08:49:10]   [Script] [Multi Purpose Agent] [BG] Background mode requires Pro, showing overlay anyway...
-[08:49:10]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
-[08:49:10]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
-[08:49:10]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
-[08:49:10]   [Script] [Multi Purpose Agent] [Loop] cursorLoop STARTED
-[08:49:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
-[08:49:10] ✓ PASS: Free tier + background mode works
-[08:49:10]   [Script] [Multi Purpose Agent] Agent Stopped.
-[08:49:10] 
-[08:49:10] ============================================================
-[08:49:10]   11. SCRIPT CONTENT CHECKS
-[08:49:10] ============================================================
-[08:49:10] ✓ PASS: No direct innerHTML assignments - Found 0 occurrences
-[08:49:10] ✓ PASS: No TrustedTypes createPolicy calls
-[08:49:10] ✓ PASS: Uses pure DOM construction
-[08:49:10] ✓ PASS: No eval or Function constructor
-[08:49:10] ✓ PASS: No document.write
-[08:49:10] ✓ PASS: No window.open
-[08:49:10] 
-[08:49:10] ============================================================
-[08:49:10]   12. OVERLAY LOGIC
-[08:49:10] ============================================================
-[08:49:10] ✓ PASS: Overlay ID constant defined
-[08:49:10] ✓ PASS: showOverlay function exists
-[08:49:10] ✓ PASS: updateOverlay function exists
-[08:49:10] ✓ PASS: hideOverlay function exists
-[08:49:10] ✓ PASS: Overlay styles defined
-[08:49:10] 
-[08:49:10] ============================================================
-[08:49:10]   13. LOOP LOGIC
-[08:49:10] ============================================================
-[08:49:10] ✓ PASS: cursorLoop function exists
-[08:49:10] ✓ PASS: antigravityLoop function exists
-[08:49:10] ✓ PASS: performClick function exists
-[08:49:10] ✓ PASS: isAcceptButton function exists
-[08:49:10] ✓ PASS: Loops check session ID
-[08:49:10] ✓ PASS: Loops check isRunning flag
-[08:49:10] 
-[08:49:10] ============================================================
-[08:49:10]   14. BUTTON DETECTION LOGIC
-[08:49:10] ============================================================
-[08:49:10] ✓ PASS: Accept pattern defined
-[08:49:10] ✓ PASS: Run pattern defined
-[08:49:10] ✓ PASS: Reject patterns defined
-[08:49:10] ✓ PASS: Button visibility checked
-[08:49:10] 
-[08:49:10] ============================================================
-[08:49:10]   15. UTILS FUNCTIONS
-[08:49:10] ============================================================
-[08:49:10] ✓ PASS: getDocuments function exists
-[08:49:10] ✓ PASS: queryAll function exists
-[08:49:10] ✓ PASS: updateTabNames function exists
-[08:49:10] ✓ PASS: stripTimeSuffix function exists
-[08:49:10] 
-[08:49:10] ============================================================
-[08:49:10]   16. BROWSER CONTEXT GUARD
-[08:49:10] ============================================================
-[08:49:10] ✓ PASS: Window undefined guard exists
-[08:49:10] 
-[08:49:10] ============================================================
-[08:49:10]   17. ADVANCED EDGE CASES
-[08:49:10] ============================================================
-[08:49:10]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=true
-[08:49:10]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: true, isPro: true)
-[08:49:10]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
-[08:49:10]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
-[08:49:10]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
-[08:49:10]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
-[08:49:10]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting cursor loop...
-[08:49:10]   [Script] [Multi Purpose Agent] [Loop] cursorLoop STARTED
-[08:49:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
-[08:49:10]   [Script] [Multi Purpose Agent] [Focus] Initialized (awaiting extension sync)
-[08:49:10]   [Script] [Multi Purpose Agent] [Analytics] Initialized
-[08:49:10]   [Script] [Multi Purpose Agent] Core Bundle Initialized.
-[08:49:10] ✓ PASS: State preserved on re-injection - 14 -> 14
-[08:49:10]   [Script] [Multi Purpose Agent] Agent Stopped.
-[08:49:10] ✓ PASS: tabNames is always an array
-[08:49:10] ✓ PASS: completionStatus is always an object
-[08:49:10] ✓ PASS: startTimes is always an object
-[08:49:10]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=true
-[08:49:10]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: true, isPro: true)
-[08:49:10]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
-[08:49:10]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
-[08:49:10]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
-[08:49:10]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
-[08:49:10]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting cursor loop...
-[08:49:10]   [Script] [Multi Purpose Agent] [Loop] cursorLoop STARTED
-[08:49:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
-[08:49:10]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=antigravity, isPro=true, isBG=true
-[08:49:10]   [Script] [Multi Purpose Agent] Stopping previous session...
-[08:49:10]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: antigravity, BG: true, isPro: true)
-[08:49:10]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
-[08:49:10]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
-[08:49:10]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
-[08:49:10]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
-[08:49:10]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting antigravity loop...
-[08:49:10]   [Script] [Multi Purpose Agent] [Loop] antigravityLoop STARTED
-[08:49:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
-[08:49:10]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=false, isBG=false
-[08:49:10]   [Script] [Multi Purpose Agent] Stopping previous session...
-[08:49:10]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: false, isPro: false)
-[08:49:10]   [Script] [Multi Purpose Agent] Starting static poll loop...
-[08:49:10]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=true
-[08:49:10]   [Script] [Multi Purpose Agent] Stopping previous session...
-[08:49:10]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: true, isPro: true)
-[08:49:10]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
-[08:49:10]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
-[08:49:10]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
-[08:49:10]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
-[08:49:10]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting cursor loop...
-[08:49:10]   [Script] [Multi Purpose Agent] [Loop] cursorLoop STARTED
-[08:49:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
-[08:49:10] ✓ PASS: Rapid starts dont corrupt state
-[08:49:10]   [Script] [Multi Purpose Agent] Agent Stopped.
-[08:49:10]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=true
-[08:49:10]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: true, isPro: true)
-[08:49:10]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
-[08:49:10]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
-[08:49:10]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
-[08:49:10]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
-[08:49:10]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting cursor loop...
-[08:49:10]   [Script] [Multi Purpose Agent] [Loop] cursorLoop STARTED
-[08:49:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
-[08:49:10]   [Script] [Multi Purpose Agent] Agent Stopped.
-[08:49:10]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=true
-[08:49:10]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: true, isPro: true)
-[08:49:10]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
-[08:49:10]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
-[08:49:10]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
-[08:49:10]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
-[08:49:10]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting cursor loop...
-[08:49:10]   [Script] [Multi Purpose Agent] [Loop] cursorLoop STARTED
-[08:49:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
-[08:49:10]   [Script] [Multi Purpose Agent] Agent Stopped.
-[08:49:10] ✓ PASS: Session ID always increments - 19 -> 20
-[08:49:10]   [Script] [Multi Purpose Agent] Agent Stopped.
-[08:49:10]   [Script] [Multi Purpose Agent] Agent Stopped.
-[08:49:10] ✓ PASS: Stop without prior start is safe
-[08:49:10]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=true
-[08:49:10]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: true, isPro: true)
-[08:49:10]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
-[08:49:10]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
-[08:49:10]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
-[08:49:10]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
-[08:49:10]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting cursor loop...
-[08:49:10]   [Script] [Multi Purpose Agent] [Loop] cursorLoop STARTED
-[08:49:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
-[08:49:10]   [Script] [Multi Purpose Agent] Agent Stopped.
-[08:49:10]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=true
-[08:49:10]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: true, isPro: true)
-[08:49:10]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
-[08:49:10]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
-[08:49:10]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
-[08:49:10]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
-[08:49:10]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting cursor loop...
-[08:49:10]   [Script] [Multi Purpose Agent] [Loop] cursorLoop STARTED
-[08:49:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
-[08:49:10] ✓ PASS: Start-stop-start cycle works
-[08:49:10]   [Script] [Multi Purpose Agent] Agent Stopped.
-[08:49:10]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=true
-[08:49:10]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: true, isPro: true)
-[08:49:10]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
-[08:49:10]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
-[08:49:10]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
-[08:49:10]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
-[08:49:10]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting cursor loop...
-[08:49:10]   [Script] [Multi Purpose Agent] [Loop] cursorLoop STARTED
-[08:49:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
-[08:49:10] ✓ PASS: Missing isPro handled
-[08:49:10]   [Script] [Multi Purpose Agent] Agent Stopped.
-[08:49:10]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=false
-[08:49:10]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: false, isPro: true)
-[08:49:10]   [Script] [Multi Purpose Agent] Starting static poll loop...
-[08:49:10] ✓ PASS: Missing pollInterval handled
-[08:49:10]   [Script] [Multi Purpose Agent] Agent Stopped.
-[08:49:10] ✓ PASS: Has completion state update logic
-[08:49:10] ✓ PASS: Has time suffix regex
-[08:49:10] ✓ PASS: Has deduplicateNames function
-[08:49:10] ✓ PASS: Handles duplicate tab names
-[08:49:10] ✓ PASS: Uses proper MouseEvent dispatch
-[08:49:10] ✓ PASS: Loops use async/await correctly
-[08:49:10] ✓ PASS: Has initialization log message
-[08:49:10] 
-[08:49:10] ============================================================
-[08:49:10]   SUMMARY
-[08:49:10] ============================================================
-[08:49:10] 
-[08:49:10] Total Tests: 72
-[08:49:10] Passed: 72
-[08:49:10] Failed: 0
-[08:49:10] Pass Rate: 100.0%
-[08:49:10] 
-[08:49:10] 🎉 ALL TESTS PASSED - READY TO SHIP!
-[08:49:10] 
-[08:49:10] Test completed at: 2025-12-29T08:49:10.164Z
-[08:49:10] Log file: C:\Users\rulfe\GitHub\auto-accept-agent\background_mode_test_results.log
+[13:58:25] 
+[13:58:25] ============================================================
+[13:58:25]   1. SCRIPT LOADING & SYNTAX
+[13:58:25] ============================================================
+[13:58:25] ✓ PASS: Script file exists - C:\Users\rulfe\GitHub\auto-accept-agent\main_scripts\full_cdp_script.js
+[13:58:25] ✓ PASS: Script syntax is valid
+[13:58:25] ✓ PASS: Script length reasonable - 54901 bytes
+[13:58:25] ✓ PASS: Script contains IIFE wrapper
+[13:58:25] ✓ PASS: Script uses strict mode
+[13:58:25] 
+[13:58:25] ============================================================
+[13:58:25]   2. SANDBOX EXECUTION
+[13:58:25] ============================================================
+[13:58:25]   [Script] [Multi Purpose Agent] [Analytics] State initialized
+[13:58:25]   [Script] [Multi Purpose Agent] [Focus] Initialized (awaiting extension sync)
+[13:58:25]   [Script] [Multi Purpose Agent] [Analytics] Initialized
+[13:58:25]   [Script] [Multi Purpose Agent] Core Bundle Initialized.
+[13:58:25] ✓ PASS: Script executes without error
+[13:58:25] 
+[13:58:25] ============================================================
+[13:58:25]   3. API EXPOSURE
+[13:58:25] ============================================================
+[13:58:25] ✓ PASS: __autoAcceptStart is a function
+[13:58:25] ✓ PASS: __autoAcceptStop is a function
+[13:58:25] ✓ PASS: __autoAcceptState is initialized
+[13:58:25] ✓ PASS: State has all required properties - ["isRunning","tabNames","completionStatus","sessionID","currentMode","startTimes","bannedCommands","isPro","stats"]
+[13:58:25] ✓ PASS: Initial state values correct
+[13:58:25] 
+[13:58:25] ============================================================
+[13:58:25]   4. BACKGROUND MODE - CURSOR
+[13:58:25] ============================================================
+[13:58:25]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=true
+[13:58:25]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: true, isPro: true)
+[13:58:25]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
+[13:58:25]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
+[13:58:25]   [Script] [Multi Purpose Agent] [Overlay] Styles injected
+[13:58:25]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
+[13:58:25]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
+[13:58:25]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting cursor loop...
+[13:58:25]   [Script] [Multi Purpose Agent] [Loop] cursorLoop STARTED
+[13:58:25]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
+[13:58:25] ✓ PASS: Start background mode (Cursor) - isRunning=true
+[13:58:25] ✓ PASS: Session ID incremented - sessionID=1
+[13:58:25] ✓ PASS: Current mode set to cursor - currentMode=cursor
+[13:58:25] ✓ PASS: isBackgroundMode flag set
+[13:58:25]   [Script] [Multi Purpose Agent] Agent Stopped.
+[13:58:25] ✓ PASS: Stop background mode - isRunning=false
+[13:58:25] 
+[13:58:25] ============================================================
+[13:58:25]   5. BACKGROUND MODE - ANTIGRAVITY
+[13:58:25] ============================================================
+[13:58:25]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=antigravity, isPro=true, isBG=true
+[13:58:25]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: antigravity, BG: true, isPro: true)
+[13:58:25]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
+[13:58:25]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
+[13:58:25]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
+[13:58:25]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
+[13:58:25]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting antigravity loop...
+[13:58:25]   [Script] [Multi Purpose Agent] [Loop] antigravityLoop STARTED
+[13:58:25]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
+[13:58:25] ✓ PASS: Start background mode (Antigravity)
+[13:58:25]   [Script] [Multi Purpose Agent] Agent Stopped.
+[13:58:25] 
+[13:58:25] ============================================================
+[13:58:25]   6. NON-BACKGROUND (SIMPLE) MODE
+[13:58:25] ============================================================
+[13:58:25]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=false, isBG=false
+[13:58:25]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: false, isPro: false)
+[13:58:25]   [Script] [Multi Purpose Agent] Starting static poll loop...
+[13:58:25] ✓ PASS: Start simple mode
+[13:58:25] ✓ PASS: Simple mode isBackgroundMode=false
+[13:58:25]   [Script] [Multi Purpose Agent] Agent Stopped.
+[13:58:25] 
+[13:58:25] ============================================================
+[13:58:25]   7. MODE SWITCHING
+[13:58:25] ============================================================
+[13:58:25]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=false, isBG=false
+[13:58:25]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: false, isPro: false)
+[13:58:25]   [Script] [Multi Purpose Agent] Starting static poll loop...
+[13:58:25]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=true
+[13:58:25]   [Script] [Multi Purpose Agent] Stopping previous session...
+[13:58:25]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: true, isPro: true)
+[13:58:25]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
+[13:58:25]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
+[13:58:25]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
+[13:58:25]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
+[13:58:25]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting cursor loop...
+[13:58:25]   [Script] [Multi Purpose Agent] [Loop] cursorLoop STARTED
+[13:58:25]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
+[13:58:25] ✓ PASS: Mode switch increments session - 4 -> 5
+[13:58:25]   [Script] [Multi Purpose Agent] Agent Stopped.
+[13:58:25]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=true
+[13:58:25]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: true, isPro: true)
+[13:58:25]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
+[13:58:25]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
+[13:58:25]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
+[13:58:25]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
+[13:58:25]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting cursor loop...
+[13:58:25]   [Script] [Multi Purpose Agent] [Loop] cursorLoop STARTED
+[13:58:25]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
+[13:58:25]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=antigravity, isPro=true, isBG=true
+[13:58:25]   [Script] [Multi Purpose Agent] Stopping previous session...
+[13:58:25]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: antigravity, BG: true, isPro: true)
+[13:58:25]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
+[13:58:25]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
+[13:58:25]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
+[13:58:25]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
+[13:58:25]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting antigravity loop...
+[13:58:25]   [Script] [Multi Purpose Agent] [Loop] antigravityLoop STARTED
+[13:58:25]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
+[13:58:25] ✓ PASS: IDE switch increments session - cursor -> antigravity
+[13:58:25]   [Script] [Multi Purpose Agent] Agent Stopped.
+[13:58:25] 
+[13:58:25] ============================================================
+[13:58:25]   8. IDEMPOTENCY
+[13:58:25] ============================================================
+[13:58:25]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=true
+[13:58:25]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: true, isPro: true)
+[13:58:25]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
+[13:58:25]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
+[13:58:25]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
+[13:58:25]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
+[13:58:25]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting cursor loop...
+[13:58:25]   [Script] [Multi Purpose Agent] [Loop] cursorLoop STARTED
+[13:58:25]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
+[13:58:25]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=true
+[13:58:25]   [Script] [Multi Purpose Agent] Already running with same config, skipping
+[13:58:25] ✓ PASS: Same config is idempotent - sid stayed at 8
+[13:58:25]   [Script] [Multi Purpose Agent] Agent Stopped.
+[13:58:25]   [Script] [Multi Purpose Agent] Agent Stopped.
+[13:58:25]   [Script] [Multi Purpose Agent] Agent Stopped.
+[13:58:25]   [Script] [Multi Purpose Agent] Agent Stopped.
+[13:58:25] ✓ PASS: Multiple stops are safe
+[13:58:25] 
+[13:58:25] ============================================================
+[13:58:25]   9. EDGE CASES - CONFIG HANDLING
+[13:58:25] ============================================================
+[13:58:25]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=false
+[13:58:25]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: false, isPro: true)
+[13:58:25]   [Script] [Multi Purpose Agent] Starting static poll loop...
+[13:58:25] ✓ PASS: Empty config handled
+[13:58:25]   [Script] [Multi Purpose Agent] Agent Stopped.
+[13:58:25]   [Script] [Multi Purpose Agent] ERROR in __autoAcceptStart: Cannot read properties of undefined (reading 'ide')
+[13:58:25]   [Script ERROR] [Multi Purpose Agent] Start error: TypeError: Cannot read properties of undefined (reading 'ide')
+[13:58:25] ✓ PASS: Undefined config handled gracefully - Script did not crash
+[13:58:25]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=true
+[13:58:25]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: true, isPro: true)
+[13:58:25]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
+[13:58:25]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
+[13:58:25]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
+[13:58:25]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
+[13:58:25]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting cursor loop...
+[13:58:25]   [Script] [Multi Purpose Agent] [Loop] cursorLoop STARTED
+[13:58:25]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
+[13:58:25] ✓ PASS: Null IDE handled
+[13:58:25]   [Script] [Multi Purpose Agent] Agent Stopped.
+[13:58:25]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=unknown_ide, isPro=true, isBG=true
+[13:58:25]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: unknown_ide, BG: true, isPro: true)
+[13:58:25]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
+[13:58:25]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
+[13:58:25]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
+[13:58:25]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
+[13:58:25]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting unknown_ide loop...
+[13:58:25]   [Script] [Multi Purpose Agent] [Loop] antigravityLoop STARTED
+[13:58:25]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
+[13:58:25] ✓ PASS: Unknown IDE handled gracefully
+[13:58:25]   [Script] [Multi Purpose Agent] Agent Stopped.
+[13:58:25]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=true
+[13:58:25]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: true, isPro: true)
+[13:58:25]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
+[13:58:25]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
+[13:58:25]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
+[13:58:25]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
+[13:58:25]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting cursor loop...
+[13:58:25]   [Script] [Multi Purpose Agent] [Loop] cursorLoop STARTED
+[13:58:25]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
+[13:58:25] ✓ PASS: IDE name case insensitive
+[13:58:25]   [Script] [Multi Purpose Agent] Agent Stopped.
+[13:58:25] 
+[13:58:25] ============================================================
+[13:58:25]   10. EDGE CASES - FREE TIER
+[13:58:25] ============================================================
+[13:58:25]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=false, isBG=true
+[13:58:25]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: true, isPro: false)
+[13:58:25]   [Script] [Multi Purpose Agent] [BG] Background mode requires Pro, showing overlay anyway...
+[13:58:25]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
+[13:58:25]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
+[13:58:25]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
+[13:58:25]   [Script] [Multi Purpose Agent] [Loop] cursorLoop STARTED
+[13:58:25]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
+[13:58:25] ✓ PASS: Free tier + background mode works
+[13:58:25]   [Script] [Multi Purpose Agent] Agent Stopped.
+[13:58:25] 
+[13:58:25] ============================================================
+[13:58:25]   11. SCRIPT CONTENT CHECKS
+[13:58:25] ============================================================
+[13:58:25] ✓ PASS: No direct innerHTML assignments - Found 0 occurrences
+[13:58:25] ✓ PASS: No TrustedTypes createPolicy calls
+[13:58:25] ✓ PASS: Uses pure DOM construction
+[13:58:25] ✓ PASS: No eval or Function constructor
+[13:58:25] ✓ PASS: No document.write
+[13:58:25] ✓ PASS: No window.open
+[13:58:25] 
+[13:58:25] ============================================================
+[13:58:25]   12. OVERLAY LOGIC
+[13:58:25] ============================================================
+[13:58:25] ✓ PASS: Overlay ID constant defined
+[13:58:25] ✓ PASS: showOverlay function exists
+[13:58:25] ✓ PASS: updateOverlay function exists
+[13:58:25] ✓ PASS: hideOverlay function exists
+[13:58:25] ✓ PASS: Overlay styles defined
+[13:58:25] 
+[13:58:25] ============================================================
+[13:58:25]   13. LOOP LOGIC
+[13:58:25] ============================================================
+[13:58:25] ✓ PASS: cursorLoop function exists
+[13:58:25] ✓ PASS: antigravityLoop function exists
+[13:58:25] ✓ PASS: performClick function exists
+[13:58:25] ✓ PASS: isAcceptButton function exists
+[13:58:25] ✓ PASS: Loops check session ID
+[13:58:25] ✓ PASS: Loops check isRunning flag
+[13:58:25] 
+[13:58:25] ============================================================
+[13:58:25]   14. BUTTON DETECTION LOGIC
+[13:58:25] ============================================================
+[13:58:25] ✓ PASS: Accept pattern defined
+[13:58:25] ✓ PASS: Run pattern defined
+[13:58:25] ✓ PASS: Reject patterns defined
+[13:58:25] ✓ PASS: Button visibility checked
+[13:58:25] 
+[13:58:25] ============================================================
+[13:58:25]   15. UTILS FUNCTIONS
+[13:58:25] ============================================================
+[13:58:25] ✓ PASS: getDocuments function exists
+[13:58:25] ✓ PASS: queryAll function exists
+[13:58:25] ✓ PASS: updateTabNames function exists
+[13:58:25] ✓ PASS: stripTimeSuffix function exists
+[13:58:25] 
+[13:58:25] ============================================================
+[13:58:25]   16. BROWSER CONTEXT GUARD
+[13:58:25] ============================================================
+[13:58:25] ✓ PASS: Window undefined guard exists
+[13:58:25] 
+[13:58:25] ============================================================
+[13:58:25]   17. ADVANCED EDGE CASES
+[13:58:25] ============================================================
+[13:58:25]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=true
+[13:58:25]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: true, isPro: true)
+[13:58:25]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
+[13:58:25]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
+[13:58:25]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
+[13:58:25]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
+[13:58:25]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting cursor loop...
+[13:58:25]   [Script] [Multi Purpose Agent] [Loop] cursorLoop STARTED
+[13:58:25]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
+[13:58:25]   [Script] [Multi Purpose Agent] [Focus] Initialized (awaiting extension sync)
+[13:58:25]   [Script] [Multi Purpose Agent] [Analytics] Initialized
+[13:58:25]   [Script] [Multi Purpose Agent] Core Bundle Initialized.
+[13:58:25] ✓ PASS: State preserved on re-injection - 14 -> 14
+[13:58:25]   [Script] [Multi Purpose Agent] Agent Stopped.
+[13:58:25] ✓ PASS: tabNames is always an array
+[13:58:25] ✓ PASS: completionStatus is always an object
+[13:58:25] ✓ PASS: startTimes is always an object
+[13:58:25]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=true
+[13:58:25]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: true, isPro: true)
+[13:58:25]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
+[13:58:25]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
+[13:58:25]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
+[13:58:25]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
+[13:58:25]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting cursor loop...
+[13:58:25]   [Script] [Multi Purpose Agent] [Loop] cursorLoop STARTED
+[13:58:25]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
+[13:58:25]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=antigravity, isPro=true, isBG=true
+[13:58:25]   [Script] [Multi Purpose Agent] Stopping previous session...
+[13:58:25]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: antigravity, BG: true, isPro: true)
+[13:58:25]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
+[13:58:25]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
+[13:58:25]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
+[13:58:25]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
+[13:58:25]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting antigravity loop...
+[13:58:25]   [Script] [Multi Purpose Agent] [Loop] antigravityLoop STARTED
+[13:58:25]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
+[13:58:25]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=false, isBG=false
+[13:58:25]   [Script] [Multi Purpose Agent] Stopping previous session...
+[13:58:25]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: false, isPro: false)
+[13:58:25]   [Script] [Multi Purpose Agent] Starting static poll loop...
+[13:58:25]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=true
+[13:58:25]   [Script] [Multi Purpose Agent] Stopping previous session...
+[13:58:25]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: true, isPro: true)
+[13:58:25]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
+[13:58:25]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
+[13:58:25]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
+[13:58:25]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
+[13:58:25]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting cursor loop...
+[13:58:25]   [Script] [Multi Purpose Agent] [Loop] cursorLoop STARTED
+[13:58:25]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
+[13:58:25] ✓ PASS: Rapid starts dont corrupt state
+[13:58:25]   [Script] [Multi Purpose Agent] Agent Stopped.
+[13:58:25]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=true
+[13:58:25]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: true, isPro: true)
+[13:58:25]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
+[13:58:25]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
+[13:58:25]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
+[13:58:25]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
+[13:58:25]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting cursor loop...
+[13:58:25]   [Script] [Multi Purpose Agent] [Loop] cursorLoop STARTED
+[13:58:25]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
+[13:58:25]   [Script] [Multi Purpose Agent] Agent Stopped.
+[13:58:25]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=true
+[13:58:25]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: true, isPro: true)
+[13:58:25]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
+[13:58:25]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
+[13:58:25]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
+[13:58:25]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
+[13:58:25]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting cursor loop...
+[13:58:25]   [Script] [Multi Purpose Agent] [Loop] cursorLoop STARTED
+[13:58:25]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
+[13:58:25]   [Script] [Multi Purpose Agent] Agent Stopped.
+[13:58:25] ✓ PASS: Session ID always increments - 19 -> 20
+[13:58:25]   [Script] [Multi Purpose Agent] Agent Stopped.
+[13:58:25]   [Script] [Multi Purpose Agent] Agent Stopped.
+[13:58:25] ✓ PASS: Stop without prior start is safe
+[13:58:25]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=true
+[13:58:25]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: true, isPro: true)
+[13:58:25]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
+[13:58:25]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
+[13:58:25]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
+[13:58:25]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
+[13:58:25]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting cursor loop...
+[13:58:25]   [Script] [Multi Purpose Agent] [Loop] cursorLoop STARTED
+[13:58:25]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
+[13:58:25]   [Script] [Multi Purpose Agent] Agent Stopped.
+[13:58:25]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=true
+[13:58:25]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: true, isPro: true)
+[13:58:25]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
+[13:58:25]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
+[13:58:25]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
+[13:58:25]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
+[13:58:25]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting cursor loop...
+[13:58:25]   [Script] [Multi Purpose Agent] [Loop] cursorLoop STARTED
+[13:58:25]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
+[13:58:25] ✓ PASS: Start-stop-start cycle works
+[13:58:25]   [Script] [Multi Purpose Agent] Agent Stopped.
+[13:58:25]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=true
+[13:58:25]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: true, isPro: true)
+[13:58:25]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
+[13:58:25]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
+[13:58:25]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
+[13:58:25]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
+[13:58:25]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting cursor loop...
+[13:58:25]   [Script] [Multi Purpose Agent] [Loop] cursorLoop STARTED
+[13:58:25]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
+[13:58:25] ✓ PASS: Missing isPro handled
+[13:58:25]   [Script] [Multi Purpose Agent] Agent Stopped.
+[13:58:25]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=false
+[13:58:25]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: false, isPro: true)
+[13:58:25]   [Script] [Multi Purpose Agent] Starting static poll loop...
+[13:58:25] ✓ PASS: Missing pollInterval handled
+[13:58:25]   [Script] [Multi Purpose Agent] Agent Stopped.
+[13:58:25] ✓ PASS: Has completion state update logic
+[13:58:25] ✓ PASS: Has time suffix regex
+[13:58:25] ✓ PASS: Has deduplicateNames function
+[13:58:25] ✓ PASS: Handles duplicate tab names
+[13:58:25] ✓ PASS: Uses proper MouseEvent dispatch
+[13:58:25] ✓ PASS: Loops use async/await correctly
+[13:58:25] ✓ PASS: Has initialization log message
+[13:58:25] 
+[13:58:25] ============================================================
+[13:58:25]   SUMMARY
+[13:58:25] ============================================================
+[13:58:25] 
+[13:58:25] Total Tests: 72
+[13:58:25] Passed: 72
+[13:58:25] Failed: 0
+[13:58:25] Pass Rate: 100.0%
+[13:58:25] 
+[13:58:25] 🎉 ALL TESTS PASSED - READY TO SHIP!
+[13:58:25] 
+[13:58:25] Test completed at: 2025-12-29T13:58:25.267Z
+[13:58:25] Log file: C:\Users\rulfe\GitHub\auto-accept-agent\background_mode_test_results.log

@@ -1,5 +1,6 @@
 const vscode = require('vscode');
 const path = require('path');
+const fs = require('fs');
 
 // Lazy load SettingsPanel to avoid blocking activation
 let SettingsPanel = null;
@@ -140,6 +141,7 @@ let statusBackgroundItem; // New: Background Mode toggle
 let outputChannel;
 let currentIDE = 'unknown'; // 'cursor' | 'antigravity'
 let globalContext;
+let lastStatusText = ''; // For tracking status changes
 
 // Handlers (used by both IDEs now)
 let cdpHandler;
@@ -150,6 +152,16 @@ function log(message) {
         const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
         const logLine = `[${timestamp}] ${message}`;
         console.log(logLine);
+
+        // Write to global log file for Settings Panel visibility
+        if (globalContext) {
+            const logPath = path.join(globalContext.extensionPath, 'multi-purpose-agent-cdp.log');
+            try {
+                fs.appendFileSync(logPath, `${logLine}\n`, 'utf8');
+            } catch (e) {
+                // Ignore file write errors to prevent loop
+            }
+        }
     } catch (e) {
         console.error('Logging failed:', e);
     }
@@ -161,6 +173,8 @@ function detectIDE() {
     if (appName.toLowerCase().includes('antigravity')) return 'Antigravity';
     return 'Code'; // only supporting these 3 for now
 }
+
+const IS_FIRST_RUN_KEY = 'multi-purpose-agent-is-first-run-v1';
 
 async function activate(context) {
     globalContext = context;
@@ -197,7 +211,28 @@ async function activate(context) {
 
     try {
         // 1. Initialize State
-        isEnabled = context.globalState.get(GLOBAL_STATE_KEY, false);
+        // Check for fresh install/first run
+        const isFirstRun = !context.globalState.get(IS_FIRST_RUN_KEY, false);
+
+        if (isFirstRun) {
+            // Force OFF on first run
+            isEnabled = false;
+            await context.globalState.update(GLOBAL_STATE_KEY, false);
+            await context.globalState.update(IS_FIRST_RUN_KEY, true);
+
+            // Prompt for restart
+            vscode.window.showInformationMessage(
+                "Multi Purpose Agent installed! Please restart the IDE to complete setup.",
+                "Restart IDE"
+            ).then(selection => {
+                if (selection === "Restart IDE") {
+                    vscode.commands.executeCommand("workbench.action.reloadWindow");
+                }
+            });
+        } else {
+            isEnabled = context.globalState.get(GLOBAL_STATE_KEY, false);
+        }
+
         isPro = true;
 
         // Load frequency
@@ -312,6 +347,31 @@ async function activate(context) {
                 } else {
                     vscode.window.showErrorMessage('Failed to load Settings Panel.');
                 }
+            }),
+            vscode.commands.registerCommand('multi-purpose-agent.resetSettings', async () => {
+                const choice = await vscode.window.showWarningMessage(
+                    "Are you sure you want to reset ALL Multi Purpose Agent settings? This cannot be undone.",
+                    { modal: true },
+                    "Reset All",
+                    "Cancel"
+                );
+
+                if (choice === "Reset All") {
+                    try {
+                        // Reset all global keys
+                        await context.globalState.update(GLOBAL_STATE_KEY, undefined);
+                        await context.globalState.update(PRO_STATE_KEY, undefined);
+                        await context.globalState.update(FREQ_STATE_KEY, undefined);
+                        await context.globalState.update(BANNED_COMMANDS_KEY, undefined);
+                        await context.globalState.update(ROI_STATS_KEY, undefined);
+                        await context.globalState.update(BACKGROUND_MODE_KEY, undefined);
+                        await context.globalState.update(IS_FIRST_RUN_KEY, undefined);
+
+                        vscode.window.showInformationMessage("All settings have been reset. Please restart VS Code.");
+                    } catch (e) {
+                        vscode.window.showErrorMessage(`Reset failed: ${e.message}`);
+                    }
+                }
             })
         );
 
@@ -395,9 +455,10 @@ async function handleToggle(context) {
                 "Are you sure you want to turn off Multi Purpose Agent?",
                 { modal: true },
                 "Turn Off",
+                "Open Prompt Mode",
                 "View Dashboard"
             );
-            if (choice === "View Dashboard") {
+            if (choice === "View Dashboard" || choice === "Open Prompt Mode") {
                 const panel = getSettingsPanel();
                 if (panel) panel.createOrShow(context.extensionUri, context);
                 return;
@@ -876,6 +937,13 @@ function updateStatusBar() {
         statusBarItem.backgroundColor = bgColor;
         statusBarItem.command = command;
 
+        // Log status changes for debugging
+        const newStatusText = `ON|${statusText}|bg=${backgroundModeEnabled}`;
+        if (lastStatusText !== newStatusText) {
+            log(`Status changed: "${lastStatusText}" → "${newStatusText}"`);
+            lastStatusText = newStatusText;
+        }
+
         // Show Background Mode toggle when Multi Purpose Agent is ON
         if (statusBackgroundItem) {
             if (backgroundModeEnabled) {
@@ -895,6 +963,13 @@ function updateStatusBar() {
         statusBarItem.tooltip = 'Click to enable Multi Purpose Agent.';
         statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
         statusBarItem.command = 'multi-purpose-agent.toggle';
+
+        // Log status changes for debugging
+        const newStatusText = `OFF`;
+        if (lastStatusText !== newStatusText) {
+            log(`Status changed: "${lastStatusText}" → "${newStatusText}"`);
+            lastStatusText = newStatusText;
+        }
 
         // Hide Background Mode toggle when Multi Purpose Agent is OFF
         if (statusBackgroundItem) {
