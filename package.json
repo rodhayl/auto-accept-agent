@@ -1,7 +1,7 @@
 {
     "name": "auto-accept-agent",
-    "displayName": "Auto Accept Agent",
-    "description": "Auto Accept Agent: Automated Cursor and Antigravity workflow with Pro recovery tools.",
+    "displayName": "Multi Purpose Agent",
+    "description": "Multi Purpose Agent: Automated Cursor and Antigravity workflow with Pro recovery tools.",
     "version": "7.1.2-david",
     "publisher": "rulfe",
     "icon": "media/icon.png",
@@ -12,10 +12,14 @@
     "keywords": [
         "antigravity",
         "ai",
-        "auto-accept"
+        "multi-purpose-agent"
     ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/rulfe/auto-accept-agent.git"
+    },
     "scripts": {
-        "test": "node test/integration-test.js",
+        "test": "node test_scripts/run_all.js",
         "compile": "esbuild extension.js --bundle --outfile=dist/extension.js --external:vscode --platform=node --format=cjs",
         "vscode:prepublish": "npm run compile",
         "package": "npx vsce package"
@@ -24,33 +28,37 @@
         "vscode": "^1.75.0"
     },
     "activationEvents": [
-        "onStartupFinished"
+        "onStartupFinished",
+        "onCommand:multi-purpose-agent.toggle",
+        "onCommand:multi-purpose-agent.openSettings",
+        "onCommand:multi-purpose-agent.toggleBackground",
+        "onCommand:multi-purpose-agent.relaunch"
     ],
     "main": "dist/extension.js",
     "contributes": {
         "commands": [
             {
-                "command": "auto-accept.toggle",
-                "title": "Auto Accept: Toggle ON/OFF"
+                "command": "multi-purpose-agent.toggle",
+                "title": "Multi Purpose Agent: Toggle ON/OFF"
             },
             {
-                "command": "auto-accept.toggleBackground",
-                "title": "Auto Accept: Toggle Background Mode"
+                "command": "multi-purpose-agent.toggleBackground",
+                "title": "Multi Purpose Agent: Toggle Background Mode"
             },
             {
-                "command": "auto-accept.openSettings",
-                "title": "Auto Accept: Settings & Pro"
+                "command": "multi-purpose-agent.openSettings",
+                "title": "Multi Purpose Agent: Settings & Pro"
             }
         ],
         "configuration": {
-            "title": "Auto Accept",
+            "title": "Multi Purpose Agent",
             "properties": {
-                "auto-accept.schedule.enabled": {
+                "multi-purpose-agent.schedule.enabled": {
                     "type": "boolean",
                     "default": false,
                     "description": "Enable scheduled prompts."
                 },
-                "auto-accept.schedule.mode": {
+                "multi-purpose-agent.schedule.mode": {
                     "type": "string",
                     "enum": [
                         "interval",
@@ -59,12 +67,12 @@
                     "default": "interval",
                     "description": "Mode for scheduled prompts: 'interval' (every X minutes) or 'daily' (at specific time)."
                 },
-                "auto-accept.schedule.value": {
+                "multi-purpose-agent.schedule.value": {
                     "type": "string",
                     "default": "30",
                     "description": "Value for schedule: Minutes for 'interval' mode (e.g. '30') or HH:MM for 'daily' mode (e.g. '17:00')."
                 },
-                "auto-accept.schedule.prompt": {
+                "multi-purpose-agent.schedule.prompt": {
                     "type": "string",
                     "default": "Status report please",
                     "description": "The prompt text to send."

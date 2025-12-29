@@ -6,7 +6,7 @@ const api = (function () {
 
     const log = (msg, isSuccess = false) => {
         const color = isSuccess ? "#00ff00" : "#007bff";
-        console.log(`%c[AutoAccept] ${msg}`, `color: ${color}; font-weight: ${isSuccess ? 'bold' : 'normal'};`);
+        console.log(`%c[Multi Purpose Agent] ${msg}`, `color: ${color}; font-weight: ${isSuccess ? 'bold' : 'normal'};`);
     };
 
     // Safe State

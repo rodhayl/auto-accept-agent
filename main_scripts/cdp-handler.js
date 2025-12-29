@@ -10,7 +10,7 @@ class CDPHandler {
         this.startPort = startPort;
         this.endPort = endPort;
         this.logger = logger;
-        this.connections = new Map(); // id -> {ws, injected}
+        this.connections = new Map(); // id -> {ws, injected, pageInfo}
         this.messageId = 1;
         this.pendingMessages = new Map();
         this.isEnabled = false;
@@ -28,6 +28,11 @@ class CDPHandler {
     log(...args) {
         const msg = `${LOG_PREFIX} ${args.join(' ')}`;
         if (this.logger) this.logger(msg);
+        if (this.logFilePath) {
+            try {
+                fs.appendFileSync(this.logFilePath, `${msg}\n`, 'utf8');
+            } catch (e) { }
+        }
     }
 
     setProStatus(isPro) {
@@ -69,8 +74,19 @@ class CDPHandler {
         this.isEnabled = true;
         const instances = await this.scanForInstances();
 
+        if (instances.length === 0) {
+            this.log('No CDP instances found on expected ports.');
+            return;
+        }
+
         for (const instance of instances) {
-            for (const page of instance.pages) {
+            const pagesToAttach = instance.pages.filter(p => this.shouldAttachToPage(p));
+            this.log(`Port ${instance.port}: pages=${instance.pages.length}, candidates=${pagesToAttach.length}`);
+            if (pagesToAttach.length === 0) {
+                continue;
+            }
+
+            for (const page of pagesToAttach) {
                 if (!this.connections.has(page.id)) {
                     await this.connectToPage(page);
                 }
@@ -102,7 +118,9 @@ class CDPHandler {
         return new Promise((resolve) => {
             const ws = new WebSocket(page.webSocketDebuggerUrl);
             ws.on('open', () => {
-                this.connections.set(page.id, { ws, injected: false });
+                this.connections.set(page.id, { ws, injected: false, pageInfo: page });
+                this.sendCommand(page.id, 'Runtime.enable').catch(() => { });
+                this.sendCommand(page.id, 'Log.enable').catch(() => { });
                 resolve(true);
             });
             ws.on('message', (data) => {
@@ -112,6 +130,27 @@ class CDPHandler {
                         const { resolve: res, reject: rej } = this.pendingMessages.get(msg.id);
                         this.pendingMessages.delete(msg.id);
                         msg.error ? rej(new Error(msg.error.message)) : res(msg.result);
+                        return;
+                    }
+
+                    if (msg.method === 'Runtime.consoleAPICalled') {
+                        const args = msg.params?.args || [];
+                        const text = args.map(a => {
+                            if (a.value !== undefined) return String(a.value);
+                            if (a.description !== undefined) return String(a.description);
+                            return '';
+                        }).filter(Boolean).join(' ');
+
+                        if (text.includes('[Multi Purpose Agent]')) {
+                            const pageTitle = page.title ? ` "${page.title}"` : '';
+                            this.log(`${page.id}${pageTitle}: ${text}`);
+                        }
+                        return;
+                    }
+
+                    if (msg.method === 'Runtime.exceptionThrown') {
+                        const desc = msg.params?.exceptionDetails?.exception?.description || msg.params?.exceptionDetails?.text;
+                        if (desc) this.log(`${page.id}: Runtime exception: ${desc}`);
                     }
                 } catch (e) { }
             });
@@ -143,8 +182,18 @@ class CDPHandler {
                 if (result.exceptionDetails) {
                     this.log(`Injection Exception on ${pageId}: ${result.exceptionDetails.text} ${result.exceptionDetails.exception.description}`);
                 } else {
-                    conn.injected = true;
-                    this.log(`Injected core onto ${pageId}`);
+                    const verify = await this.sendCommand(pageId, 'Runtime.evaluate', {
+                        expression: '(function(){ return (typeof window !== "undefined") && (typeof window.__autoAcceptStart === "function"); })()',
+                        returnByValue: true
+                    }).catch(() => null);
+
+                    if (verify?.result?.value === true) {
+                        conn.injected = true;
+                        this.log(`Injected core onto ${pageId}`);
+                    } else {
+                        this.log(`Injection verification failed on ${pageId}`);
+                        conn.injected = false;
+                    }
                 }
             }
 
@@ -158,7 +207,8 @@ class CDPHandler {
                             return "started";
                         }
                         return "not_found";
-                    })()`
+                    })()`,
+                    returnByValue: true
                 });
                 this.log(`Start signal on ${pageId}: ${JSON.stringify(res.result?.value || res)}`);
             }
@@ -192,7 +242,16 @@ class CDPHandler {
         for (const [pageId] of this.connections) {
             try {
                 await this.sendCommand(pageId, 'Runtime.evaluate', {
-                    expression: 'if(typeof window !== "undefined" && typeof hideOverlay === "function") hideOverlay()'
+                    expression: `(function(){ 
+                        try {
+                            if (typeof document !== "undefined") {
+                                const overlay = document.getElementById('__autoAcceptBgOverlay');
+                                if (overlay) overlay.remove();
+                                const style = document.getElementById('__autoAcceptBgStyles');
+                                if (style) style.remove();
+                            }
+                        } catch (e) {}
+                    })()`
                 });
             } catch (e) { }
         }
@@ -336,6 +395,31 @@ class CDPHandler {
     }
 
     getConnectionCount() { return this.connections.size; }
+    getInjectedCount() {
+        let count = 0;
+        for (const [, conn] of this.connections) if (conn.injected) count++;
+        return count;
+    }
+
+    shouldAttachToPage(page) {
+        const type = (page.type || '').toLowerCase();
+        if (type && type !== 'page') return false;
+
+        const url = String(page.url || '');
+        if (!url) return false;
+        const lowered = url.toLowerCase();
+
+        const deniedPrefixes = ['chrome-extension://', 'devtools://', 'edge://', 'about:'];
+        if (deniedPrefixes.some(p => lowered.startsWith(p))) return false;
+
+        const deniedSubstrings = ['/json/', 'chromewebdata', 'newtab', 'extensions'];
+        if (deniedSubstrings.some(s => lowered.includes(s))) return false;
+
+        const title = String(page.title || '').toLowerCase();
+        const allowHints = ['vscode-webview', 'workbench', 'cursor', 'anysphere', 'antigravity'];
+        return allowHints.some(h => lowered.includes(h) || title.includes(h));
+    }
+
     disconnectAll() {
         for (const [, conn] of this.connections) try { conn.ws.close(); } catch (e) { }
         this.connections.clear();

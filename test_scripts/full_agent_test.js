@@ -1,5 +1,5 @@
 /**
- * FULL AUTO-ACCEPT AGENT - CONSOLE EDITION
+ * FULL MULTI PURPOSE AGENT - CONSOLE EDITION
  * Incorporates: utils, auto-accept, simple-poll, and background-poll (Cursor/Antigravity)
  * 
  * Usage:
@@ -13,7 +13,7 @@
     // --- 0. LOGGER ---
     const log = (msg, isSuccess = false) => {
         const color = isSuccess ? "#00ff00" : "#3b82f6";
-        console.log(`%c[AutoAccept-Agent] ${msg}`, `color: ${color}; font-weight: bold;`);
+    console.log(`%c[Multi Purpose Agent] ${msg}`, `color: ${color}; font-weight: bold;`);
     };
 
     // --- 1. UTILS ---

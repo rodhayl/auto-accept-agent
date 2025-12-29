@@ -14,7 +14,7 @@ class Relauncher {
     constructor(logger = null) {
         this.platform = os.platform();
         this.logger = logger || console.log;
-        this.logFile = path.join(os.tmpdir(), 'auto_accept_relaunch.log');
+        this.logFile = path.join(os.tmpdir(), 'multi_purpose_agent_relaunch.log');
     }
 
     log(msg) {
@@ -103,7 +103,7 @@ class Relauncher {
 
 
     async _readWindowsShortcut(shortcutPath) {
-        const scriptPath = path.join(os.tmpdir(), 'auto_accept_read_shortcut.ps1');
+        const scriptPath = path.join(os.tmpdir(), 'multi_purpose_agent_read_shortcut.ps1');
 
         try {
             const psScript = `
@@ -224,7 +224,7 @@ try {
 
 
     async _modifyWindowsShortcut(shortcutPath) {
-        const scriptPath = path.join(os.tmpdir(), 'auto_accept_modify_shortcut.ps1');
+        const scriptPath = path.join(os.tmpdir(), 'multi_purpose_agent_modify_shortcut.ps1');
 
         try {
             // Write PowerShell script to temp file to avoid escaping issues
@@ -346,7 +346,7 @@ try {
                 // Fall back to using 'open -a' command which is more reliable
                 this.log(`No direct binary found, using 'open -a' method`);
                 const scriptContent = `#!/bin/bash
-# Auto Accept - ${ideName} with CDP enabled
+# Multi Purpose Agent - ${ideName} with CDP enabled
 # Generated: ${new Date().toISOString()}
 # Uses 'open -a' for reliable app launching with arguments
 open -a "${appBundle}" --args ${CDP_FLAG} "$@"
@@ -355,7 +355,7 @@ open -a "${appBundle}" --args ${CDP_FLAG} "$@"
                 this.log(`Created macOS wrapper (open -a method): ${wrapperPath}`);
             } else {
                 const scriptContent = `#!/bin/bash
-# Auto Accept - ${ideName} with CDP enabled
+# Multi Purpose Agent - ${ideName} with CDP enabled
 # Generated: ${new Date().toISOString()}
 "${binaryPath}" ${CDP_FLAG} "$@"
 `;
@@ -471,7 +471,7 @@ open -a "${appBundle}" --args ${CDP_FLAG} "$@"
         }
 
         const batchContent = `@echo off
-REM Auto Accept - IDE Relaunch Script
+REM Multi Purpose Agent - IDE Relaunch Script
 timeout /t 5 /nobreak >nul
 ${commandLine}
 del "%~f0" & exit
@@ -686,7 +686,7 @@ exit 1
         this.log('Showing relaunch prompt');
 
         const choice = await vscode.window.showInformationMessage(
-            'Auto Accept requires a quick one-time setup to enable background mode. This will restart your IDE with necessary permissions.',
+            'Multi Purpose Agent requires a quick one-time setup to enable background mode. This will restart your IDE with necessary permissions.',
             { modal: false },
             'Setup & Restart',
             'Not Now'

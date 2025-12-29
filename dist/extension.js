@@ -20,6 +20,8 @@ var require_settings_panel = __commonJS({
   "settings-panel.js"(exports2, module2) {
     var vscode2 = require("vscode");
     var { STRIPE_LINKS } = require_config();
+    var fs = require("fs");
+    var path2 = require("path");
     var SettingsPanel2 = class _SettingsPanel {
       static currentPanel = void 0;
       static viewType = "autoAcceptSettings";
@@ -27,12 +29,11 @@ var require_settings_panel = __commonJS({
         const column = vscode2.window.activeTextEditor ? vscode2.window.activeTextEditor.viewColumn : void 0;
         if (_SettingsPanel.currentPanel) {
           _SettingsPanel.currentPanel.panel.reveal(column);
-          _SettingsPanel.currentPanel.updateMode(mode);
           return;
         }
         const panel = vscode2.window.createWebviewPanel(
           _SettingsPanel.viewType,
-          mode === "prompt" ? "Auto Accept Agent" : "Auto Accept Settings",
+          "Multi Purpose Agent Settings",
           column || vscode2.ViewColumn.One,
           {
             enableScripts: true,
@@ -40,16 +41,12 @@ var require_settings_panel = __commonJS({
             retainContextWhenHidden: true
           }
         );
-        _SettingsPanel.currentPanel = new _SettingsPanel(panel, extensionUri, context, mode);
+        _SettingsPanel.currentPanel = new _SettingsPanel(panel, extensionUri, context);
       }
-      static showUpgradePrompt(context) {
-        _SettingsPanel.createOrShow(context.extensionUri, context, "prompt");
-      }
-      constructor(panel, extensionUri, context, mode) {
+      constructor(panel, extensionUri, context) {
         this.panel = panel;
         this.extensionUri = extensionUri;
         this.context = context;
-        this.mode = mode;
         this.disposables = [];
         this.update();
         this.panel.onDidDispose(() => this.dispose(), null, this.disposables);
@@ -58,8 +55,13 @@ var require_settings_panel = __commonJS({
             switch (message.command) {
               case "setFrequency":
                 if (this.isPro()) {
-                  await this.context.globalState.update("auto-accept-frequency", message.value);
-                  vscode2.commands.executeCommand("auto-accept.updateFrequency", message.value);
+                  await this.context.globalState.update("multi-purpose-agent-frequency", message.value);
+                  vscode2.commands.executeCommand("multi-purpose-agent.updateFrequency", message.value);
+                }
+                break;
+              case "setBackgroundMode":
+                if (this.isPro()) {
+                  vscode2.commands.executeCommand("multi-purpose-agent.toggleBackground", message.value);
                 }
                 break;
               case "getStats":
@@ -68,10 +70,13 @@ var require_settings_panel = __commonJS({
               case "getROIStats":
                 this.sendROIStats();
                 break;
+              case "getBackgroundMode":
+                this.sendBackgroundMode();
+                break;
               case "updateBannedCommands":
                 if (this.isPro()) {
-                  await this.context.globalState.update("auto-accept-banned-commands", message.commands);
-                  vscode2.commands.executeCommand("auto-accept.updateBannedCommands", message.commands);
+                  await this.context.globalState.update("multi-purpose-agent-banned-commands", message.commands);
+                  vscode2.commands.executeCommand("multi-purpose-agent.updateBannedCommands", message.commands);
                 }
                 break;
               case "getBannedCommands":
@@ -79,7 +84,7 @@ var require_settings_panel = __commonJS({
                 break;
               case "updateSchedule":
                 if (this.isPro()) {
-                  const config = vscode2.workspace.getConfiguration("auto-accept.schedule");
+                  const config = vscode2.workspace.getConfiguration("multi-purpose-agent.schedule");
                   await config.update("enabled", message.enabled, vscode2.ConfigurationTarget.Global);
                   await config.update("mode", message.mode, vscode2.ConfigurationTarget.Global);
                   await config.update("value", message.value, vscode2.ConfigurationTarget.Global);
@@ -90,15 +95,17 @@ var require_settings_panel = __commonJS({
               case "getSchedule":
                 this.sendSchedule();
                 break;
-              case "upgrade":
-                this.openUpgrade(message.promoCode);
-                this.startPolling(this.getUserId());
+              case "getLogs":
+                this.sendLogs(message.tailLines);
+                break;
+              case "openLogFile":
+                this.openLogFile();
+                break;
+              case "clearLogs":
+                this.clearLogs();
                 break;
               case "checkPro":
                 this.handleCheckPro();
-                break;
-              case "dismissPrompt":
-                await this.handleDismiss();
                 break;
             }
           },
@@ -106,46 +113,34 @@ var require_settings_panel = __commonJS({
           this.disposables
         );
       }
-      async handleDismiss() {
-        const now = Date.now();
-        await this.context.globalState.update("auto-accept-lastDismissedAt", now);
-        this.dispose();
-      }
       async handleCheckPro() {
-        await this.context.globalState.update("auto-accept-isPro", true);
-        vscode2.window.showInformationMessage("Auto Accept: Pro status verified! (Dev Mode)");
+        await this.context.globalState.update("multi-purpose-agent-isPro", true);
+        vscode2.window.showInformationMessage("Multi Purpose Agent: Pro status verified! (Dev Mode)");
         this.update();
       }
       isPro() {
         return true;
       }
       getUserId() {
-        let userId = this.context.globalState.get("auto-accept-userId");
+        let userId = this.context.globalState.get("multi-purpose-agent-userId");
         if (!userId) {
           userId = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
             const r = Math.random() * 16 | 0;
             const v = c === "x" ? r : r & 3 | 8;
             return v.toString(16);
           });
-          this.context.globalState.update("auto-accept-userId", userId);
+          this.context.globalState.update("multi-purpose-agent-userId", userId);
         }
         return userId;
       }
-      openUpgrade(promoCode) {
-      }
-      updateMode(mode) {
-        this.mode = mode;
-        this.panel.title = mode === "prompt" ? "Auto Accept Agent" : "Auto Accept Settings";
-        this.update();
-      }
       sendStats() {
-        const stats = this.context.globalState.get("auto-accept-stats", {
+        const stats = this.context.globalState.get("multi-purpose-agent-stats", {
           clicks: 0,
           sessions: 0,
           lastSession: null
         });
         const isPro2 = this.isPro();
-        const frequency = isPro2 ? this.context.globalState.get("auto-accept-frequency", 1e3) : 300;
+        const frequency = isPro2 ? this.context.globalState.get("multi-purpose-agent-frequency", 1e3) : 300;
         this.panel.webview.postMessage({
           command: "updateStats",
           stats,
@@ -155,13 +150,20 @@ var require_settings_panel = __commonJS({
       }
       async sendROIStats() {
         try {
-          const roiStats = await vscode2.commands.executeCommand("auto-accept.getROIStats");
+          const roiStats = await vscode2.commands.executeCommand("multi-purpose-agent.getROIStats");
           this.panel.webview.postMessage({
             command: "updateROIStats",
             roiStats
           });
         } catch (e) {
         }
+      }
+      sendBackgroundMode() {
+        const enabled = this.context.globalState.get("multi-purpose-agent-background-mode", false);
+        this.panel.webview.postMessage({
+          command: "updateBackgroundMode",
+          enabled
+        });
       }
       sendBannedCommands() {
         const defaultBannedCommands = [
@@ -177,14 +179,14 @@ var require_settings_panel = __commonJS({
           "> /dev/sda",
           "chmod -R 777 /"
         ];
-        const bannedCommands2 = this.context.globalState.get("auto-accept-banned-commands", defaultBannedCommands);
+        const bannedCommands2 = this.context.globalState.get("multi-purpose-agent-banned-commands", defaultBannedCommands);
         this.panel.webview.postMessage({
           command: "updateBannedCommands",
           bannedCommands: bannedCommands2
         });
       }
       sendSchedule() {
-        const config = vscode2.workspace.getConfiguration("auto-accept.schedule");
+        const config = vscode2.workspace.getConfiguration("multi-purpose-agent.schedule");
         this.panel.webview.postMessage({
           command: "updateSchedule",
           schedule: {
@@ -195,17 +197,87 @@ var require_settings_panel = __commonJS({
           }
         });
       }
+      getLogFilePath() {
+        return path2.join(this.context.extensionPath, "auto-accept-cdp.log");
+      }
+      readTail(filePath, { tailLines = 300, maxBytes = 25e4 } = {}) {
+        try {
+          if (!fs.existsSync(filePath)) {
+            return { text: "", meta: { filePath, exists: false } };
+          }
+          const stat = fs.statSync(filePath);
+          const size = stat.size || 0;
+          const start = Math.max(0, size - maxBytes);
+          const length = size - start;
+          const fd = fs.openSync(filePath, "r");
+          try {
+            const buf = Buffer.alloc(length);
+            fs.readSync(fd, buf, 0, length, start);
+            const content = buf.toString("utf8");
+            const lines = content.split(/\r?\n/).filter((l) => l.length > 0);
+            const tail = lines.slice(-tailLines).join("\n");
+            return {
+              text: tail,
+              meta: {
+                filePath,
+                exists: true,
+                size,
+                mtimeMs: stat.mtimeMs,
+                linesShown: Math.min(tailLines, lines.length)
+              }
+            };
+          } finally {
+            try {
+              fs.closeSync(fd);
+            } catch (e) {
+            }
+          }
+        } catch (e) {
+          return { text: `Failed to read logs: ${e.message}`, meta: { filePath, exists: null } };
+        }
+      }
+      sendLogs(tailLines) {
+        const filePath = this.getLogFilePath();
+        const result = this.readTail(filePath, { tailLines: parseInt(tailLines) || 300 });
+        this.panel.webview.postMessage({
+          command: "updateLogs",
+          logs: result.text,
+          meta: result.meta
+        });
+      }
+      async openLogFile() {
+        const filePath = this.getLogFilePath();
+        try {
+          if (!fs.existsSync(filePath)) {
+            vscode2.window.showInformationMessage("Log file not found yet. Turn Multi Purpose Agent ON first.");
+            return;
+          }
+          const doc = await vscode2.workspace.openTextDocument(vscode2.Uri.file(filePath));
+          await vscode2.window.showTextDocument(doc, { preview: false });
+        } catch (e) {
+          vscode2.window.showErrorMessage(`Failed to open log file: ${e.message}`);
+        }
+      }
+      clearLogs() {
+        const filePath = this.getLogFilePath();
+        try {
+          fs.writeFileSync(filePath, "", "utf8");
+        } catch (e) {
+        }
+        this.sendLogs(300);
+      }
       update() {
         this.panel.webview.html = this.getHtmlContent();
         setTimeout(() => {
           this.sendStats();
           this.sendROIStats();
           this.sendSchedule();
+          this.sendBackgroundMode();
+          this.sendLogs(300);
         }, 100);
       }
       getHtmlContent() {
         const isPro2 = this.isPro();
-        const isPrompt = this.mode === "prompt";
         const userId = this.getUserId();
         const stripeLinks = {
           MONTHLY: `${STRIPE_LINKS.MONTHLY}?client_reference_id=${userId}`,
@@ -239,7 +311,7 @@ var require_settings_panel = __commonJS({
             }
 
             .container {
-                max-width: ${isPrompt ? "500px" : "640px"};
+                max-width: 640px;
                 width: 100%;
                 display: flex;
                 flex-direction: column;
@@ -421,17 +493,6 @@ var require_settings_panel = __commonJS({
                 font-weight: 600;
             }
 
-            .prompt-card {
-                background: var(--card-bg);
-                border: 1px solid var(--border);
-                border-radius: 12px;
-                padding: 32px;
-                text-align: center;
-                box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            }
-            .prompt-title { font-size: 20px; font-weight: 800; margin-bottom: 12px; letter-spacing: -0.5px; }
-            .prompt-text { font-size: 15px; color: var(--fg-dim); line-height: 1.6; margin-bottom: 24px; }
-            
             /* Toggle Switch */
             .switch { position: relative; display: inline-block; width: 40px; height: 20px; }
             .switch input { opacity: 0; width: 0; height: 0; }
@@ -440,46 +501,13 @@ var require_settings_panel = __commonJS({
             input:checked + .slider { background-color: var(--accent); }
             input:checked + .slider:before { transform: translateX(20px); }
         `;
-        if (isPrompt) {
-          return `<!DOCTYPE html>
-            <html>
-            <head><style>${css}</style></head>
-            <body>
-                <div class="container">
-                    <div class="prompt-card">
-                        <div style="font-size: 32px; margin-bottom: 20px;">\u26A1</div>
-                        <div class="prompt-title">Workflow Active</div>
-                        <div class="prompt-text">
-                            Auto Accept Pro is active.<br/><br/>
-                            <strong style="color: var(--green); opacity: 1;">Auto-recovering interruptions...</strong>
-                        </div>
-                        <div class="btn-primary" style="background: rgba(34, 197, 94, 0.2); border: 1px solid var(--green); cursor: default;">
-                            \u{1F680} Pro Mode Enabled
-                        </div>
-
-                        <a class="link-secondary" onclick="dismiss()" style="margin-top: 24px; opacity: 0.6;">
-                            Close Window
-                        </a>
-                    </div>
-                </div>
-                <script>
-                    const vscode = acquireVsCodeApi();
-                    function dismiss() {
-                        vscode.postMessage({ command: 'dismissPrompt' });
-                    }
-                    // Auto-dismiss after 2 seconds
-                    setTimeout(dismiss, 2000);
-                </script>
-            </body>
-            </html>`;
-        }
         return `<!DOCTYPE html>
         <html>
         <head><style>${css}</style></head>
         <body>
             <div class="container">
                 <div class="header">
-                    <h1>Auto Accept <span class="pro-badge">Pro</span></h1>
+                    <h1>Multi Purpose <span class="pro-badge">Agent</span></h1>
                     <div class="subtitle">Multi-agent automation for Antigravity & Cursor</div>
                 </div>
 
@@ -505,6 +533,20 @@ var require_settings_panel = __commonJS({
                             <div class="stat-val" id="roiBlockedCount" style="opacity: 0.4;">0</div>
                             <div class="stat-label">Blocked</div>
                         </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-label">\u{1F30D} Background Mode</div>
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <span style="font-size: 13px;">Enable Background Mode</span>
+                        <label class="switch">
+                            <input type="checkbox" id="backgroundModeEnabled">
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
+                    <div style="font-size: 11px; color: var(--fg-dim); margin-top: 8px;">
+                        Allow Multi Purpose Agent to work on all open tabs simultaneously.
                     </div>
                 </div>
 
@@ -579,6 +621,26 @@ var require_settings_panel = __commonJS({
                     <div id="bannedStatus" style="font-size: 12px; margin-top: 12px; text-align: center; height: 18px;"></div>
                 </div>
 
+                <div class="section">
+                    <div class="section-label">\u{1F9FE} Logs</div>
+                    <div style="display: flex; gap: 12px; margin-bottom: 12px;">
+                        <select id="logTailSelect" style="flex: 1; background: rgba(0,0,0,0.3); border: 1px solid var(--border); color: var(--fg); padding: 8px; border-radius: 6px;">
+                            <option value="200">Last 200 lines</option>
+                            <option value="300" selected>Last 300 lines</option>
+                            <option value="500">Last 500 lines</option>
+                            <option value="1000">Last 1000 lines</option>
+                        </select>
+                        <button id="refreshLogsBtn" class="btn-outline" style="flex: 1;">Refresh</button>
+                        <button id="copyLogsBtn" class="btn-outline" style="flex: 1;">Copy</button>
+                    </div>
+                    <div style="display: flex; gap: 12px; margin-bottom: 12px;">
+                        <button id="openLogsBtn" class="btn-primary" style="flex: 2;">Open File</button>
+                        <button id="clearLogsBtn" class="btn-outline" style="flex: 1;">Clear</button>
+                    </div>
+                    <textarea id="logsOutput" readonly style="min-height: 220px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;"></textarea>
+                    <div id="logsMeta" style="font-size: 11px; color: var(--fg-dim); margin-top: 10px;"></div>
+                </div>
+
                 <div style="text-align: center; opacity: 0.15; font-size: 10px; padding: 20px 0; letter-spacing: 1px;">
                     REF: ${userId}
                 </div>
@@ -605,6 +667,14 @@ var require_settings_panel = __commonJS({
                          const s = (e.target.value/1000).toFixed(1) + 's';
                          valDisplay.innerText = s;
                          vscode.postMessage({ command: 'setFrequency', value: e.target.value });
+                    });
+                }
+
+                // Background Mode Toggle
+                const backgroundModeCheckbox = document.getElementById('backgroundModeEnabled');
+                if (backgroundModeCheckbox) {
+                    backgroundModeCheckbox.addEventListener('change', (e) => {
+                        vscode.postMessage({ command: 'setBackgroundMode', value: e.target.checked });
                     });
                 }
 
@@ -670,6 +740,42 @@ var require_settings_panel = __commonJS({
                     });
                 }
 
+                const logsOutput = document.getElementById('logsOutput');
+                const logsMeta = document.getElementById('logsMeta');
+                const refreshLogsBtn = document.getElementById('refreshLogsBtn');
+                const copyLogsBtn = document.getElementById('copyLogsBtn');
+                const openLogsBtn = document.getElementById('openLogsBtn');
+                const clearLogsBtn = document.getElementById('clearLogsBtn');
+                const logTailSelect = document.getElementById('logTailSelect');
+
+                function requestLogs() {
+                    const tailLines = logTailSelect ? logTailSelect.value : 300;
+                    vscode.postMessage({ command: 'getLogs', tailLines });
+                }
+
+                if (refreshLogsBtn) refreshLogsBtn.addEventListener('click', requestLogs);
+                if (openLogsBtn) openLogsBtn.addEventListener('click', () => vscode.postMessage({ command: 'openLogFile' }));
+                if (clearLogsBtn) clearLogsBtn.addEventListener('click', () => vscode.postMessage({ command: 'clearLogs' }));
+                if (logTailSelect) logTailSelect.addEventListener('change', requestLogs);
+
+                if (copyLogsBtn) {
+                    copyLogsBtn.addEventListener('click', async () => {
+                        try {
+                            const text = logsOutput ? logsOutput.value : '';
+                            await navigator.clipboard.writeText(text);
+                            const originalText = copyLogsBtn.innerText;
+                            copyLogsBtn.innerText = '\u2713 Copied';
+                            copyLogsBtn.style.borderColor = 'var(--green)';
+                            copyLogsBtn.style.color = 'var(--green)';
+                            setTimeout(() => {
+                                copyLogsBtn.innerText = originalText;
+                                copyLogsBtn.style.borderColor = 'rgba(255,255,255,0.2)';
+                                copyLogsBtn.style.color = 'rgba(255,255,255,0.8)';
+                            }, 1500);
+                        } catch (e) { }
+                    });
+                }
+
                 // --- Fancy Count-up Animation ---
                 function animateCountUp(element, target, duration = 1200, suffix = '') {
                     const currentVal = parseInt(element.innerText.replace(/[^0-9]/g, '')) || 0;
@@ -705,6 +811,11 @@ var require_settings_panel = __commonJS({
                             document.getElementById('roiTimeSaved').innerText = roi.timeSavedFormatted || '0m';
                         }
                     }
+                    if (msg.command === 'updateBackgroundMode') {
+                        if (backgroundModeCheckbox) {
+                            backgroundModeCheckbox.checked = msg.enabled;
+                        }
+                    }
                     if (msg.command === 'updateBannedCommands') {
                         if (bannedInput && msg.bannedCommands) {
                             bannedInput.value = msg.bannedCommands.join('\\n');
@@ -722,12 +833,28 @@ var require_settings_panel = __commonJS({
                             scheduleControls.style.pointerEvents = msg.schedule.enabled ? 'auto' : 'none';
                         }
                     }
+                    if (msg.command === 'updateLogs') {
+                        if (logsOutput) logsOutput.value = msg.logs || '';
+                        if (logsMeta) {
+                            const meta = msg.meta || {};
+                            if (meta.exists === false) {
+                                logsMeta.innerText = 'Log file not found yet. Turn Multi Purpose Agent ON to generate logs.';
+                            } else if (meta.exists === true) {
+                                const kb = meta.size ? Math.round(meta.size / 1024) : 0;
+                                logsMeta.innerText = (meta.linesShown || 0) + ' lines \u2022 ' + kb + ' KB \u2022 ' + (meta.filePath || '');
+                            } else {
+                                logsMeta.innerText = meta.filePath ? meta.filePath : '';
+                            }
+                        }
+                    }
                 });
 
                 // Initial load
                 refreshStats();
                 vscode.postMessage({ command: 'getBannedCommands' });
                 vscode.postMessage({ command: 'getSchedule' });
+                vscode.postMessage({ command: 'getBackgroundMode' });
+                requestLogs();
             </script>
         </body>
         </html>`;
@@ -757,10 +884,10 @@ var require_settings_panel = __commonJS({
           const isPro2 = await this.checkProStatus(userId);
           if (isPro2) {
             clearInterval(this.pollTimer);
-            await this.context.globalState.update("auto-accept-isPro", true);
-            vscode2.window.showInformationMessage("Auto Accept: Pro status verified! Thank you for your support.");
+            await this.context.globalState.update("multi-purpose-agent-isPro", true);
+            vscode2.window.showInformationMessage("Multi Purpose Agent: Pro status verified! Thank you for your support.");
             this.update();
-            vscode2.commands.executeCommand("auto-accept.updateFrequency", 1e3);
+            vscode2.commands.executeCommand("multi-purpose-agent.updateFrequency", 1e3);
           }
         }, 5e3);
       }
@@ -4422,6 +4549,13 @@ var require_cdp_handler = __commonJS({
       log(...args) {
         const msg = `${LOG_PREFIX} ${args.join(" ")}`;
         if (this.logger) this.logger(msg);
+        if (this.logFilePath) {
+          try {
+            fs.appendFileSync(this.logFilePath, `${msg}
+`, "utf8");
+          } catch (e) {
+          }
+        }
       }
       setProStatus(isPro2) {
         this.isPro = isPro2;
@@ -4464,8 +4598,17 @@ var require_cdp_handler = __commonJS({
       async start(config) {
         this.isEnabled = true;
         const instances = await this.scanForInstances();
+        if (instances.length === 0) {
+          this.log("No CDP instances found on expected ports.");
+          return;
+        }
         for (const instance of instances) {
-          for (const page of instance.pages) {
+          const pagesToAttach = instance.pages.filter((p) => this.shouldAttachToPage(p));
+          this.log(`Port ${instance.port}: pages=${instance.pages.length}, candidates=${pagesToAttach.length}`);
+          if (pagesToAttach.length === 0) {
+            continue;
+          }
+          for (const page of pagesToAttach) {
             if (!this.connections.has(page.id)) {
               await this.connectToPage(page);
             }
@@ -4494,7 +4637,11 @@ var require_cdp_handler = __commonJS({
         return new Promise((resolve) => {
           const ws = new WebSocket(page.webSocketDebuggerUrl);
           ws.on("open", () => {
-            this.connections.set(page.id, { ws, injected: false });
+            this.connections.set(page.id, { ws, injected: false, pageInfo: page });
+            this.sendCommand(page.id, "Runtime.enable").catch(() => {
+            });
+            this.sendCommand(page.id, "Log.enable").catch(() => {
+            });
             resolve(true);
           });
           ws.on("message", (data) => {
@@ -4504,6 +4651,24 @@ var require_cdp_handler = __commonJS({
                 const { resolve: res, reject: rej } = this.pendingMessages.get(msg.id);
                 this.pendingMessages.delete(msg.id);
                 msg.error ? rej(new Error(msg.error.message)) : res(msg.result);
+                return;
+              }
+              if (msg.method === "Runtime.consoleAPICalled") {
+                const args = msg.params?.args || [];
+                const text = args.map((a) => {
+                  if (a.value !== void 0) return String(a.value);
+                  if (a.description !== void 0) return String(a.description);
+                  return "";
+                }).filter(Boolean).join(" ");
+                if (text.includes("[Multi Purpose Agent]")) {
+                  const pageTitle = page.title ? ` "${page.title}"` : "";
+                  this.log(`${page.id}${pageTitle}: ${text}`);
+                }
+                return;
+              }
+              if (msg.method === "Runtime.exceptionThrown") {
+                const desc = msg.params?.exceptionDetails?.exception?.description || msg.params?.exceptionDetails?.text;
+                if (desc) this.log(`${page.id}: Runtime exception: ${desc}`);
               }
             } catch (e) {
             }
@@ -4532,8 +4697,17 @@ var require_cdp_handler = __commonJS({
             if (result.exceptionDetails) {
               this.log(`Injection Exception on ${pageId}: ${result.exceptionDetails.text} ${result.exceptionDetails.exception.description}`);
             } else {
-              conn.injected = true;
-              this.log(`Injected core onto ${pageId}`);
+              const verify = await this.sendCommand(pageId, "Runtime.evaluate", {
+                expression: '(function(){ return (typeof window !== "undefined") && (typeof window.__autoAcceptStart === "function"); })()',
+                returnByValue: true
+              }).catch(() => null);
+              if (verify?.result?.value === true) {
+                conn.injected = true;
+                this.log(`Injected core onto ${pageId}`);
+              } else {
+                this.log(`Injection verification failed on ${pageId}`);
+                conn.injected = false;
+              }
             }
           }
           if (conn.injected) {
@@ -4545,7 +4719,8 @@ var require_cdp_handler = __commonJS({
                             return "started";
                         }
                         return "not_found";
-                    })()`
+                    })()`,
+              returnByValue: true
             });
             this.log(`Start signal on ${pageId}: ${JSON.stringify(res.result?.value || res)}`);
           }
@@ -4576,7 +4751,16 @@ var require_cdp_handler = __commonJS({
         for (const [pageId] of this.connections) {
           try {
             await this.sendCommand(pageId, "Runtime.evaluate", {
-              expression: 'if(typeof window !== "undefined" && typeof hideOverlay === "function") hideOverlay()'
+              expression: `(function(){ 
+                        try {
+                            if (typeof document !== "undefined") {
+                                const overlay = document.getElementById('__autoAcceptBgOverlay');
+                                if (overlay) overlay.remove();
+                                const style = document.getElementById('__autoAcceptBgStyles');
+                                if (style) style.remove();
+                            }
+                        } catch (e) {}
+                    })()`
             });
           } catch (e) {
           }
@@ -4702,6 +4886,25 @@ var require_cdp_handler = __commonJS({
       getConnectionCount() {
         return this.connections.size;
       }
+      getInjectedCount() {
+        let count = 0;
+        for (const [, conn] of this.connections) if (conn.injected) count++;
+        return count;
+      }
+      shouldAttachToPage(page) {
+        const type = (page.type || "").toLowerCase();
+        if (type && type !== "page") return false;
+        const url = String(page.url || "");
+        if (!url) return false;
+        const lowered = url.toLowerCase();
+        const deniedPrefixes = ["chrome-extension://", "devtools://", "edge://", "about:"];
+        if (deniedPrefixes.some((p) => lowered.startsWith(p))) return false;
+        const deniedSubstrings = ["/json/", "chromewebdata", "newtab", "extensions"];
+        if (deniedSubstrings.some((s) => lowered.includes(s))) return false;
+        const title = String(page.title || "").toLowerCase();
+        const allowHints = ["vscode-webview", "workbench", "cursor", "anysphere", "antigravity"];
+        return allowHints.some((h) => lowered.includes(h) || title.includes(h));
+      }
       disconnectAll() {
         for (const [, conn] of this.connections) try {
           conn.ws.close();
@@ -4729,7 +4932,7 @@ var require_relauncher = __commonJS({
       constructor(logger = null) {
         this.platform = os.platform();
         this.logger = logger || console.log;
-        this.logFile = path2.join(os.tmpdir(), "auto_accept_relaunch.log");
+        this.logFile = path2.join(os.tmpdir(), "multi_purpose_agent_relaunch.log");
       }
       log(msg) {
         try {
@@ -4804,7 +5007,7 @@ var require_relauncher = __commonJS({
         return shortcuts;
       }
       async _readWindowsShortcut(shortcutPath) {
-        const scriptPath = path2.join(os.tmpdir(), "auto_accept_read_shortcut.ps1");
+        const scriptPath = path2.join(os.tmpdir(), "multi_purpose_agent_read_shortcut.ps1");
         try {
           const psScript = `
 $ErrorActionPreference = "Stop"
@@ -4904,7 +5107,7 @@ try {
         }
       }
       async _modifyWindowsShortcut(shortcutPath) {
-        const scriptPath = path2.join(os.tmpdir(), "auto_accept_modify_shortcut.ps1");
+        const scriptPath = path2.join(os.tmpdir(), "multi_purpose_agent_modify_shortcut.ps1");
         try {
           const psScript = `
 $ErrorActionPreference = "Stop"
@@ -5008,7 +5211,7 @@ try {
           if (!binaryPath) {
             this.log(`No direct binary found, using 'open -a' method`);
             const scriptContent = `#!/bin/bash
-# Auto Accept - ${ideName} with CDP enabled
+# Multi Purpose Agent - ${ideName} with CDP enabled
 # Generated: ${(/* @__PURE__ */ new Date()).toISOString()}
 # Uses 'open -a' for reliable app launching with arguments
 open -a "${appBundle}" --args ${CDP_FLAG} "$@"
@@ -5017,7 +5220,7 @@ open -a "${appBundle}" --args ${CDP_FLAG} "$@"
             this.log(`Created macOS wrapper (open -a method): ${wrapperPath}`);
           } else {
             const scriptContent = `#!/bin/bash
-# Auto Accept - ${ideName} with CDP enabled
+# Multi Purpose Agent - ${ideName} with CDP enabled
 # Generated: ${(/* @__PURE__ */ new Date()).toISOString()}
 "${binaryPath}" ${CDP_FLAG} "$@"
 `;
@@ -5106,7 +5309,7 @@ open -a "${appBundle}" --args ${CDP_FLAG} "$@"
           commandLine = `start "" ${safeTarget} ${CDP_FLAG} ${folderArgs}`;
         }
         const batchContent = `@echo off
-REM Auto Accept - IDE Relaunch Script
+REM Multi Purpose Agent - IDE Relaunch Script
 timeout /t 5 /nobreak >nul
 ${commandLine}
 del "%~f0" & exit
@@ -5269,7 +5472,7 @@ exit 1
       async showRelaunchPrompt() {
         this.log("Showing relaunch prompt");
         const choice = await vscode2.window.showInformationMessage(
-          "Auto Accept requires a quick one-time setup to enable background mode. This will restart your IDE with necessary permissions.",
+          "Multi Purpose Agent requires a quick one-time setup to enable background mode. This will restart your IDE with necessary permissions.",
           { modal: false },
           "Setup & Restart",
           "Not Now"
@@ -5310,10 +5513,10 @@ function getSettingsPanel() {
   }
   return SettingsPanel;
 }
-var GLOBAL_STATE_KEY = "auto-accept-enabled-global";
-var FREQ_STATE_KEY = "auto-accept-frequency";
-var BANNED_COMMANDS_KEY = "auto-accept-banned-commands";
-var ROI_STATS_KEY = "auto-accept-roi-stats";
+var GLOBAL_STATE_KEY = "multi-purpose-agent-enabled-global";
+var FREQ_STATE_KEY = "multi-purpose-agent-frequency";
+var BANNED_COMMANDS_KEY = "multi-purpose-agent-banned-commands";
+var ROI_STATS_KEY = "multi-purpose-agent-roi-stats";
 var SECONDS_PER_CLICK = 5;
 var INSTANCE_ID = Math.random().toString(36).substring(7);
 var isEnabled = false;
@@ -5322,9 +5525,10 @@ var isLockedOut = false;
 var pollFrequency = 2e3;
 var bannedCommands = [];
 var backgroundModeEnabled = false;
-var BACKGROUND_DONT_SHOW_KEY = "auto-accept-background-dont-show";
-var BACKGROUND_MODE_KEY = "auto-accept-background-mode";
-var VERSION_7_0_KEY = "auto-accept-version-7.0-notification-shown";
+var BACKGROUND_MODE_KEY = "multi-purpose-agent-background-mode";
+var VERSION_7_0_KEY = "multi-purpose-agent-version-7.0-notification-shown";
+var STARTUP_SETUP_PROMPT_KEY = "multi-purpose-agent-startup-setup-prompt-last";
+var STARTUP_SETUP_PROMPT_COOLDOWN_MS = 1e3 * 60 * 60 * 24;
 var Scheduler = class {
   constructor(context, cdpHandler2, log2) {
     this.context = context;
@@ -5349,7 +5553,7 @@ var Scheduler = class {
     }
   }
   loadConfig() {
-    const cfg = vscode.workspace.getConfiguration("auto-accept.schedule");
+    const cfg = vscode.workspace.getConfiguration("multi-purpose-agent.schedule");
     this.enabled = cfg.get("enabled", false);
     this.config = {
       mode: cfg.get("mode", "interval"),
@@ -5387,7 +5591,7 @@ var Scheduler = class {
       if (text && this.cdpHandler) {
         this.log(`Scheduler: Sending prompt "${text}"`);
         await this.cdpHandler.sendPrompt(text);
-        vscode.window.showInformationMessage(`Auto Accept: Scheduled prompt sent.`);
+        vscode.window.showInformationMessage(`Multi Purpose Agent: Scheduled prompt sent.`);
       }
     }).catch((err) => {
       this.log(`Scheduler Error: ${err.message}`);
@@ -5427,34 +5631,34 @@ function detectIDE() {
 }
 async function activate(context) {
   globalContext = context;
-  console.log("Auto Accept Extension: Activator called.");
+  console.log("Multi Purpose Agent Extension: Activator called.");
   try {
     statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
-    statusBarItem.command = "auto-accept.toggle";
-    statusBarItem.text = "$(sync~spin) Auto Accept: Loading...";
-    statusBarItem.tooltip = "Auto Accept is initializing...";
+    statusBarItem.command = "multi-purpose-agent.toggle";
+    statusBarItem.text = "$(sync~spin) MPA: Loading...";
+    statusBarItem.tooltip = "Multi Purpose Agent is initializing...";
     context.subscriptions.push(statusBarItem);
     statusBarItem.show();
     statusSettingsItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 98);
-    statusSettingsItem.command = "auto-accept.openSettings";
+    statusSettingsItem.command = "multi-purpose-agent.openSettings";
     statusSettingsItem.text = "$(gear)";
-    statusSettingsItem.tooltip = "Auto Accept Settings & Pro Features";
+    statusSettingsItem.tooltip = "Multi Purpose Agent Settings & Pro Features";
     context.subscriptions.push(statusSettingsItem);
     statusSettingsItem.show();
     statusBackgroundItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 99);
-    statusBackgroundItem.command = "auto-accept.toggleBackground";
+    statusBackgroundItem.command = "multi-purpose-agent.toggleBackground";
     statusBackgroundItem.text = "$(globe) Background: OFF";
     statusBackgroundItem.tooltip = "Background Mode (Pro) - Works on all chats";
     context.subscriptions.push(statusBackgroundItem);
-    console.log("Auto Accept: Status bar items created and shown.");
+    console.log("Multi Purpose Agent: Status bar items created and shown.");
   } catch (sbError) {
     console.error("CRITICAL: Failed to create status bar items:", sbError);
   }
   try {
-    isEnabled = context.globalState.get(GLOBAL_STATE_KEY, true);
+    isEnabled = context.globalState.get(GLOBAL_STATE_KEY, false);
     isPro = true;
-    pollFrequency = context.globalState.get(FREQ_STATE_KEY, 100);
-    backgroundModeEnabled = context.globalState.get(BACKGROUND_MODE_KEY, true);
+    pollFrequency = context.globalState.get(FREQ_STATE_KEY, 2e3);
+    backgroundModeEnabled = context.globalState.get(BACKGROUND_MODE_KEY, false);
     const defaultBannedCommands = [
       "rm -rf /",
       "rm -rf ~",
@@ -5472,10 +5676,10 @@ async function activate(context) {
     bannedCommands = context.globalState.get(BANNED_COMMANDS_KEY, defaultBannedCommands);
     log("License verification skipped (Dev Mode: All Features Enabled)");
     currentIDE = detectIDE();
-    outputChannel = vscode.window.createOutputChannel("Auto Accept");
+    outputChannel = vscode.window.createOutputChannel("Multi Purpose Agent");
     context.subscriptions.push(outputChannel);
-    log(`Auto Accept: Activating...`);
-    log(`Auto Accept: Detected environment: ${currentIDE.toUpperCase()}`);
+    log(`Multi Purpose Agent: Activating...`);
+    log(`Multi Purpose Agent: Detected environment: ${currentIDE.toUpperCase()}`);
     vscode.window.onDidChangeWindowState(async (e) => {
       if (cdpHandler && cdpHandler.setFocusState) {
         await cdpHandler.setFocusState(e.focused);
@@ -5493,7 +5697,7 @@ async function activate(context) {
         cdpHandler.setProStatus(isPro);
       }
       try {
-        const logPath = path.join(context.extensionPath, "auto-accept-cdp.log");
+        const logPath = path.join(context.extensionPath, "multi-purpose-agent-cdp.log");
         cdpHandler.setLogFile(logPath);
         log(`CDP logging to: ${logPath}`);
       } catch (e) {
@@ -5505,18 +5709,18 @@ async function activate(context) {
       scheduler.start();
     } catch (err) {
       log(`Failed to initialize CDP handlers: ${err.message}`);
-      vscode.window.showErrorMessage(`Auto Accept Error: ${err.message}`);
+      vscode.window.showErrorMessage(`Multi Purpose Agent Error: ${err.message}`);
     }
     updateStatusBar();
     log("Status bar updated with current state.");
     context.subscriptions.push(
-      vscode.commands.registerCommand("auto-accept.toggle", () => handleToggle(context)),
-      vscode.commands.registerCommand("auto-accept.relaunch", () => handleRelaunch()),
-      vscode.commands.registerCommand("auto-accept.updateFrequency", (freq) => handleFrequencyUpdate(context, freq)),
-      vscode.commands.registerCommand("auto-accept.toggleBackground", () => handleBackgroundToggle(context)),
-      vscode.commands.registerCommand("auto-accept.updateBannedCommands", (commands) => handleBannedCommandsUpdate(context, commands)),
-      vscode.commands.registerCommand("auto-accept.getBannedCommands", () => bannedCommands),
-      vscode.commands.registerCommand("auto-accept.getROIStats", async () => {
+      vscode.commands.registerCommand("multi-purpose-agent.toggle", () => handleToggle(context)),
+      vscode.commands.registerCommand("multi-purpose-agent.relaunch", () => handleRelaunch()),
+      vscode.commands.registerCommand("multi-purpose-agent.updateFrequency", (freq) => handleFrequencyUpdate(context, freq)),
+      vscode.commands.registerCommand("multi-purpose-agent.toggleBackground", () => handleBackgroundToggle(context)),
+      vscode.commands.registerCommand("multi-purpose-agent.updateBannedCommands", (commands) => handleBannedCommandsUpdate(context, commands)),
+      vscode.commands.registerCommand("multi-purpose-agent.getBannedCommands", () => bannedCommands),
+      vscode.commands.registerCommand("multi-purpose-agent.getROIStats", async () => {
         const stats = await loadROIStats(context);
         const timeSavedSeconds = stats.clicksThisWeek * SECONDS_PER_CLICK;
         const timeSavedMinutes = Math.round(timeSavedSeconds / 60);
@@ -5526,7 +5730,7 @@ async function activate(context) {
           timeSavedFormatted: timeSavedMinutes >= 60 ? `${(timeSavedMinutes / 60).toFixed(1)} hours` : `${timeSavedMinutes} minutes`
         };
       }),
-      vscode.commands.registerCommand("auto-accept.openSettings", () => {
+      vscode.commands.registerCommand("multi-purpose-agent.openSettings", () => {
         const panel = getSettingsPanel();
         if (panel) {
           panel.createOrShow(context.extensionUri, context);
@@ -5541,11 +5745,11 @@ async function activate(context) {
       log(`Error in environment check: ${err.message}`);
     }
     showVersionNotification(context);
-    log("Auto Accept: Activation complete");
+    log("Multi Purpose Agent: Activation complete");
   } catch (error) {
     console.error("ACTIVATION CRITICAL FAILURE:", error);
     log(`ACTIVATION CRITICAL FAILURE: ${error.message}`);
-    vscode.window.showErrorMessage(`Auto Accept Extension failed to activate: ${error.message}`);
+    vscode.window.showErrorMessage(`Multi Purpose Agent Extension failed to activate: ${error.message}`);
   }
 }
 async function ensureCDPOrPrompt(showPrompt = false) {
@@ -5565,9 +5769,25 @@ async function ensureCDPOrPrompt(showPrompt = false) {
     }
   }
 }
+async function maybePromptStartupSetup(context) {
+  if (!context || !cdpHandler || !relauncher) return;
+  if (!isEnabled) return;
+  try {
+    const cdpAvailable = await cdpHandler.isCDPAvailable();
+    if (cdpAvailable) return;
+    const now = Date.now();
+    const lastPrompt = context.globalState.get(STARTUP_SETUP_PROMPT_KEY, 0);
+    if (now - lastPrompt < STARTUP_SETUP_PROMPT_COOLDOWN_MS) return;
+    await context.globalState.update(STARTUP_SETUP_PROMPT_KEY, now);
+    await relauncher.showRelaunchPrompt();
+  } catch (e) {
+    log(`Startup setup prompt failed: ${e.message}`);
+  }
+}
 async function checkEnvironmentAndStart() {
   if (isEnabled) {
-    log("Initializing Auto Accept environment...");
+    log("Initializing Multi Purpose Agent environment...");
+    await maybePromptStartupSetup(globalContext);
     await ensureCDPOrPrompt(false);
     await startPolling();
     startStatsCollection(globalContext);
@@ -5580,17 +5800,11 @@ async function handleToggle(context) {
   try {
     if (isEnabled) {
       const choice = await vscode.window.showWarningMessage(
-        "Are you sure you want to turn off Auto Accept?",
+        "Are you sure you want to turn off Multi Purpose Agent?",
         { modal: true },
         "Turn Off",
-        "Open Prompt Mode",
         "View Dashboard"
       );
-      if (choice === "Open Prompt Mode") {
-        const panel = getSettingsPanel();
-        if (panel) panel.createOrShow(context.extensionUri, context, "prompt");
-        return;
-      }
       if (choice === "View Dashboard") {
         const panel = getSettingsPanel();
         if (panel) panel.createOrShow(context.extensionUri, context);
@@ -5608,12 +5822,12 @@ async function handleToggle(context) {
     log("  Calling updateStatusBar...");
     updateStatusBar();
     if (isEnabled) {
-      log("Auto Accept: Enabled");
+      log("Multi Purpose Agent: Enabled");
       ensureCDPOrPrompt(true).then(() => startPolling());
       startStatsCollection(context);
       incrementSessionCount(context);
     } else {
-      log("Auto Accept: Disabled");
+      log("Multi Purpose Agent: Disabled");
       if (cdpHandler) {
         cdpHandler.getSessionSummary().then((summary) => showSessionSummaryNotification(context, summary)).catch(() => {
         });
@@ -5663,8 +5877,8 @@ async function handleBannedCommandsUpdate(context, commands) {
     await syncSessions();
   }
 }
-async function handleBackgroundToggle(context) {
-  log("Background toggle clicked");
+async function handleBackgroundToggle(context, forceValue) {
+  log(`Background toggle clicked. Force: ${forceValue}`);
   if (!isPro) {
     vscode.window.showInformationMessage(
       "Background Mode is a Pro feature.",
@@ -5677,38 +5891,25 @@ async function handleBackgroundToggle(context) {
     });
     return;
   }
-  const dontShowAgain = context.globalState.get(BACKGROUND_DONT_SHOW_KEY, false);
-  if (!dontShowAgain && !backgroundModeEnabled) {
-    const choice = await vscode.window.showInformationMessage(
-      "Turn on Background Mode?\n\nThis lets Auto Accept work on all your open chats at once. It will switch between tabs to click Accept for you.\n\nYou might see tabs change quickly while it works.",
-      { modal: true },
-      "Enable",
-      "Don't Show Again & Enable"
-    );
-    if (choice === "Cancel" || !choice) {
-      log("Background mode cancelled by user");
-      return;
-    }
-    if (choice === "Don't Show Again & Enable") {
-      await context.globalState.update(BACKGROUND_DONT_SHOW_KEY, true);
-      log("Background mode: Dont show again set");
-    }
-    backgroundModeEnabled = true;
-    await context.globalState.update(BACKGROUND_MODE_KEY, true);
-    log("Background mode enabled");
+  if (forceValue !== void 0) {
+    backgroundModeEnabled = forceValue;
   } else {
     backgroundModeEnabled = !backgroundModeEnabled;
-    await context.globalState.update(BACKGROUND_MODE_KEY, backgroundModeEnabled);
-    log(`Background mode toggled: ${backgroundModeEnabled}`);
-    if (!backgroundModeEnabled && cdpHandler) {
-      cdpHandler.hideBackgroundOverlay().catch(() => {
-      });
-    }
+  }
+  await context.globalState.update(BACKGROUND_MODE_KEY, backgroundModeEnabled);
+  log(`Background mode set to: ${backgroundModeEnabled}`);
+  if (!backgroundModeEnabled && cdpHandler) {
+    cdpHandler.hideBackgroundOverlay().catch(() => {
+    });
   }
   updateStatusBar();
   if (isEnabled) {
     syncSessions().catch(() => {
     });
+  }
+  const PanelClass = getSettingsPanel();
+  if (PanelClass && PanelClass.currentPanel) {
+    PanelClass.currentPanel.sendBackgroundMode();
   }
 }
 async function syncSessions() {
@@ -5724,12 +5925,14 @@ async function syncSessions() {
       });
     } catch (err) {
       log(`CDP: Sync error: ${err.message}`);
+    } finally {
+      updateStatusBar();
     }
   }
 }
 async function startPolling() {
   if (pollTimer) clearInterval(pollTimer);
-  log("Auto Accept: Monitoring session...");
+  log("Multi Purpose Agent: Monitoring session...");
   await syncSessions();
   pollTimer = setInterval(async () => {
     if (!isEnabled) return;
@@ -5767,7 +5970,7 @@ async function stopPolling() {
     statsCollectionTimer = null;
   }
   if (cdpHandler) await cdpHandler.stop();
-  log("Auto Accept: Polling stopped");
+  log("Multi Purpose Agent: Polling stopped");
 }
 function getWeekStart() {
   const now = /* @__PURE__ */ new Date();
@@ -5805,7 +6008,7 @@ async function showWeeklySummaryNotification(context, lastWeekStats) {
   } else {
     timeStr = `${timeSavedMinutes} minutes`;
   }
-  const message = `\u{1F4CA} Last week, Auto Accept saved you ${timeStr} by auto-clicking ${lastWeekStats.clicksThisWeek} buttons!`;
+  const message = `\u{1F4CA} Last week, Multi Purpose Agent saved you ${timeStr} by auto-clicking ${lastWeekStats.clicksThisWeek} buttons!`;
   let detail = "";
   if (lastWeekStats.sessionsThisWeek > 0) {
     detail += `Recovered ${lastWeekStats.sessionsThisWeek} stuck sessions. `;
@@ -5845,7 +6048,7 @@ async function showSessionSummaryNotification(context, summary) {
   }
   const message = lines.join("\n");
   vscode.window.showInformationMessage(
-    `\u{1F916} Auto Accept: ${summary.clicks} actions handled this session`,
+    `\u{1F916} Multi Purpose Agent: ${summary.clicks} actions handled this session`,
     { detail: message },
     "View Stats"
   ).then((choice) => {
@@ -5862,7 +6065,7 @@ async function showAwayActionsNotification(context, actionsCount) {
     return;
   }
   log(`[Notification] Showing away actions notification for ${actionsCount} actions`);
-  const message = `\u{1F680} Auto Accept handled ${actionsCount} action${actionsCount > 1 ? "s" : ""} while you were away.`;
+  const message = `\u{1F680} Multi Purpose Agent handled ${actionsCount} action${actionsCount > 1 ? "s" : ""} while you were away.`;
   const detail = `Agents stayed autonomous while you focused elsewhere.`;
   vscode.window.showInformationMessage(
     message,
@@ -5930,18 +6133,33 @@ function updateStatusBar() {
   if (!statusBarItem) return;
   if (isEnabled) {
     let statusText = "ON";
-    let tooltip = `Auto Accept is running.`;
+    let tooltip = `Multi Purpose Agent is running.`;
     let bgColor = void 0;
-    if (cdpHandler && cdpHandler.getConnectionCount() > 0) {
-      tooltip += " (CDP Connected)";
+    let command = "multi-purpose-agent.toggle";
+    if (cdpHandler) {
+      const injectedCount = typeof cdpHandler.getInjectedCount === "function" ? cdpHandler.getInjectedCount() : 0;
+      const connectionCount = typeof cdpHandler.getConnectionCount === "function" ? cdpHandler.getConnectionCount() : 0;
+      if (injectedCount > 0) {
+        tooltip += ` (CDP Active: ${injectedCount})`;
+      } else if (connectionCount > 0) {
+        statusText = "ON (No Chat)";
+        tooltip += " (CDP Connected - Open a chat view to attach)";
+        bgColor = new vscode.ThemeColor("statusBarItem.warningBackground");
+      } else {
+        statusText = "ON (Disconnected)";
+        tooltip += " (CDP Disconnected - Click to relaunch with CDP)";
+        bgColor = new vscode.ThemeColor("statusBarItem.warningBackground");
+        command = "multi-purpose-agent.relaunch";
+      }
     }
     if (isLockedOut) {
       statusText = "PAUSED (Multi-window)";
       bgColor = new vscode.ThemeColor("statusBarItem.warningBackground");
     }
-    statusBarItem.text = `$(check) Auto Accept: ${statusText}`;
+    statusBarItem.text = `$(check) Multi Purpose Agent: ${statusText}`;
     statusBarItem.tooltip = tooltip;
     statusBarItem.backgroundColor = bgColor;
+    statusBarItem.command = command;
     if (statusBackgroundItem) {
       if (backgroundModeEnabled) {
         statusBackgroundItem.text = "$(sync~spin) Background: ON";
@@ -5955,9 +6173,10 @@ function updateStatusBar() {
       statusBackgroundItem.show();
     }
   } else {
-    statusBarItem.text = "$(circle-slash) Auto Accept: OFF";
-    statusBarItem.tooltip = "Click to enable Auto Accept.";
+    statusBarItem.text = "$(circle-slash) Multi Purpose Agent: OFF";
+    statusBarItem.tooltip = "Click to enable Multi Purpose Agent.";
     statusBarItem.backgroundColor = new vscode.ThemeColor("statusBarItem.warningBackground");
+    statusBarItem.command = "multi-purpose-agent.toggle";
     if (statusBackgroundItem) {
       statusBackgroundItem.hide();
     }
@@ -5966,12 +6185,12 @@ function updateStatusBar() {
 async function showVersionNotification(context) {
   const hasShown = context.globalState.get(VERSION_7_0_KEY, false);
   if (hasShown) return;
-  const title = "\u{1F680} What's new in Auto Accept 7.0";
+  const title = "\u{1F680} What's new in Multi Purpose Agent 7.0";
   const body = `Smarter. Faster. More reliable.
 
 \u2705 Smart Away Notifications \u2014 Get notified only when actions happened while you were truly away.
 
-\u{1F4CA} Session Insights \u2014 See exactly what happened when you turn off Auto Accept: file edits, terminal commands, and blocked interruptions.
+\u{1F4CA} Session Insights \u2014 See exactly what happened when you turn off Multi Purpose Agent: file edits, terminal commands, and blocked interruptions.
 
 \u26A1 Improved Background Mode \u2014 Faster, more reliable multi-chat handling.
 

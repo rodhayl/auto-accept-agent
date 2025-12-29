@@ -1,5 +1,5 @@
 (function () {
-    console.log("%c[AutoAccept] Test Suite Initialized", "color: #00ff00; font-weight: bold;");
+    console.log("%c[Multi Purpose Agent] Test Suite Initialized", "color: #00ff00; font-weight: bold;");
 
     // --- Helpers from utils.js ---
     const assert = (condition, message) => {
@@ -67,18 +67,18 @@
         if (!matched) return false;
 
         if (REJECT_PATTERNS.some(p => text.includes(p))) {
-            console.log(`[AutoAccept] Rejected (negative): "${text}"`);
+            console.log(`[Multi Purpose Agent] Rejected (negative): "${text}"`);
             return false;
         }
 
         const visible = isElementVisible(el);
         const clickable = isElementClickable(el);
         if (!visible || !clickable) {
-            console.log(`[AutoAccept] Rejected (state): "${text}" (V:${visible}, C:${clickable})`);
+            console.log(`[Multi Purpose Agent] Rejected (state): "${text}" (V:${visible}, C:${clickable})`);
             return false;
         }
 
-        console.log(`[AutoAccept] Found: "${text}"`);
+        console.log(`[Multi Purpose Agent] Found: "${text}"`);
         return true;
     }
 
@@ -129,7 +129,7 @@
         let clickCount = 0;
         for (const el of uniqueElements) {
             if (isAcceptButton(el)) {
-                console.log(`[AutoAccept] %cCLICKING: "${el.textContent.trim()}"`, "color: #007bff; font-weight: bold;");
+                console.log(`[Multi Purpose Agent] %cCLICKING: "${el.textContent.trim()}"`, "color: #007bff; font-weight: bold;");
                 el.click();
                 clickCount++;
             }
@@ -138,7 +138,7 @@
     }
 
     // --- Main Exported Test Runner ---
-    window.testAutoAccept = function (mode = 'cursor') {
+    window.testMultiPurposeAgent = function (mode = 'cursor') {
         assert(['cursor', 'antigravity'].includes(mode), "Mode must be 'cursor' or 'antigravity'");
         const buttons = mode === 'cursor' ? ['run'] : ['accept', 'retry'];
 
@@ -154,11 +154,11 @@
             panelSelector = "#antigravity\\.agentPanel";
         }
 
-        console.log(`[AutoAccept] Running test for ${mode.toUpperCase()}...`);
+        console.log(`[Multi Purpose Agent] Running test for ${mode.toUpperCase()}...`);
         const result = click(targetSelectors, panelSelector);
-        console.log(`[AutoAccept] Test complete. Buttons clicked: ${result}`);
+        console.log(`[Multi Purpose Agent] Test complete. Buttons clicked: ${result}`);
     };
 
-    console.log("To run the test, type: %ctestAutoAccept('cursor')", "color: #ced4da; font-family: monospace;");
-    console.log("Or for antigravity: %ctestAutoAccept('antigravity')", "color: #ced4da; font-family: monospace;");
+    console.log("To run the test, type: %ctestMultiPurposeAgent('cursor')", "color: #ced4da; font-family: monospace;");
+    console.log("Or for antigravity: %ctestMultiPurposeAgent('antigravity')", "color: #ced4da; font-family: monospace;");
 })();

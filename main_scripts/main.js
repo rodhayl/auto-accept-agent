@@ -32,7 +32,7 @@ window.__autoAcceptStart = function (config) {
         } else if (ide === 'cursor') {
             cursorBackgroundPoll();
         } else {
-            console.error('[AutoAccept] Unknown IDE for background mode:', config.ide);
+            console.error('[Multi Purpose Agent] Unknown IDE for background mode:', config.ide);
         }
     } else {
         startSimpleCycle(config);

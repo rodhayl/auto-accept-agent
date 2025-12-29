@@ -1,8 +1,8 @@
-# Auto Accept for Antigravity
+# Multi Purpose Agent for Antigravity
 
 ## Run 3 AI agents in parallel. Zero babysitting.
 
-Stop watching tabs. Auto Accept keeps every Antigravity conversation moving — accepting file edits, terminal commands, and recovery prompts automatically.
+Stop watching tabs. Multi Purpose Agent keeps every Antigravity conversation moving — accepting file edits, terminal commands, and recovery prompts automatically.
 
 ---
 
@@ -10,13 +10,13 @@ Stop watching tabs. Auto Accept keeps every Antigravity conversation moving — 
 
 ---
 
-## Why Auto Accept?
+## Why Multi Purpose Agent?
 
 Antigravity's multi-agent workflow is powerful, but it stops every time the agent needs approval. 
 
 **That's dozens of interruptions per hour.**
 
-Auto Accept eliminates the wait:
+Multi Purpose Agent eliminates the wait:
 - ✅ **File edits** — Auto-applied
 - ✅ **Terminal commands** — Auto-executed
 - ✅ **Retry prompts** — Auto-confirmed
@@ -49,9 +49,9 @@ Visual indicators show conversation state:
 
 1. **Install** the extension
 2. **Relaunch** when prompted (one-click)
-3. **Done** — Auto Accept activates automatically
+3. **Done** — Multi Purpose Agent activates automatically
 
-The extension runs silently. Check the status bar for `Auto Accept: ON`.
+The extension runs silently. Check the status bar for `Multi Purpose Agent: ON`.
 
 ---
 

@@ -62,7 +62,7 @@ class Scheduler {
     }
 
     loadConfig() {
-        const cfg = this.vscode.workspace.getConfiguration('auto-accept.schedule');
+        const cfg = this.vscode.workspace.getConfiguration('multi-purpose-agent.schedule');
         this.enabled = cfg.get('enabled', false);
         this.config = {
             mode: cfg.get('mode', 'interval'),
@@ -90,7 +90,7 @@ class Scheduler {
         if (text && this.cdpHandler) {
             this.log(`Scheduler: Sending prompt "${text}"`);
             await this.cdpHandler.sendPrompt(text);
-            this.vscode.window.showInformationMessage(`Auto Accept: Scheduled prompt sent.`);
+            this.vscode.window.showInformationMessage(`Multi Purpose Agent: Scheduled prompt sent.`);
         }
     }
 }
