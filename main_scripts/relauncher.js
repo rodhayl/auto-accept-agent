@@ -426,10 +426,6 @@ try {
     Write-Output "ERROR:$($_.Exception.Message)"
 }
 `;
-        } catch {
-            Write - Output "ERROR:$($_.Exception.Message)"
-        }
-        `;
             fs.writeFileSync(scriptPath, psScript, 'utf8');
 
             const result = execSync(`powershell - ExecutionPolicy Bypass - File "${scriptPath}"`, {
@@ -441,7 +437,7 @@ try {
 
             const errorLine = lines.find(l => l.startsWith('ERROR:'));
             if (errorLine) {
-                this.log(`Error reading shortcut: ${ errorLine.substring(6) } `);
+                this.log(`Error reading shortcut: ${errorLine.substring(6)} `);
                 return { args: '', target: '', hasFlag: false };
             }
 
@@ -454,7 +450,7 @@ try {
 
             return { args, target, hasFlag };
         } catch (e) {
-            this.log(`Error reading shortcut ${ shortcutPath }: ${ e.message } `);
+            this.log(`Error reading shortcut ${shortcutPath}: ${e.message} `);
             return { args: '', target: '', hasFlag: false };
         } finally {
             try { fs.unlinkSync(scriptPath); } catch (e) { /* ignore */ }
@@ -464,10 +460,10 @@ try {
     // macOS shortcut handling
     async _findMacOSShortcuts(ideName) {
         const shortcuts = [];
-        this.log(`Searching for macOS apps matching: ${ ideName } `);
+        this.log(`Searching for macOS apps matching: ${ideName} `);
 
         // 1. Check for our wrapper script
-        const wrapperPath = path.join(os.homedir(), '.local', 'bin', `${ ideName.toLowerCase() } -cdp`);
+        const wrapperPath = path.join(os.homedir(), '.local', 'bin', `${ideName.toLowerCase()} -cdp`);
         if (fs.existsSync(wrapperPath)) {
             const content = fs.readFileSync(wrapperPath, 'utf8');
             shortcuts.push({
@@ -475,13 +471,13 @@ try {
                 hasFlag: content.includes('--remote-debugging-port'),
                 type: 'wrapper'
             });
-            this.log(`Found existing wrapper: ${ wrapperPath } `);
+            this.log(`Found existing wrapper: ${wrapperPath} `);
         }
 
         // 2. Search common locations
         const commonPaths = [
-            `/ Applications / ${ ideName }.app`,
-            path.join(os.homedir(), 'Applications', `${ ideName }.app`),
+            `/ Applications / ${ideName}.app`,
+            path.join(os.homedir(), 'Applications', `${ideName}.app`),
             `/ Applications / Visual Studio Code.app` // Fallback for 'Code'
         ];
 
@@ -492,7 +488,7 @@ try {
                     hasFlag: false,
                     type: 'app'
                 });
-                this.log(`Found app in common location: ${ appPath } `);
+                this.log(`Found app in common location: ${appPath} `);
             }
         }
 
@@ -510,43 +506,43 @@ try {
                             hasFlag: false,
                             type: 'app'
                         });
-                        this.log(`Found app via mdfind: ${ foundPath } `);
+                        this.log(`Found app via mdfind: ${foundPath} `);
                     }
                 }
             }
         } catch (e) {
-            this.log(`Spotlight search(mdfind) failed: ${ e.message } `);
+            this.log(`Spotlight search(mdfind) failed: ${e.message} `);
         }
 
-        this.log(`Total macOS shortcuts / apps found: ${ shortcuts.length } `);
+        this.log(`Total macOS shortcuts / apps found: ${shortcuts.length} `);
         return shortcuts;
     }
 
     async _createMacOSWrapper() {
         const ideName = this.getIDEName();
         const wrapperDir = path.join(os.homedir(), '.local', 'bin');
-        const wrapperPath = path.join(wrapperDir, `${ ideName.toLowerCase() } -cdp`);
+        const wrapperPath = path.join(wrapperDir, `${ideName.toLowerCase()} -cdp`);
 
         try {
             fs.mkdirSync(wrapperDir, { recursive: true });
 
-            const appBundle = `/ Applications / ${ ideName }.app`;
+            const appBundle = `/ Applications / ${ideName}.app`;
             const scriptContent = `#!/bin/bash
-# Auto Accept - ${ ideName } with CDP enabled
-# Generated: ${ new Date().toISOString() }
-        open - a "${appBundle}" --args ${ CDP_FLAG } "$@"
+# Auto Accept - ${ideName} with CDP enabled
+# Generated: ${new Date().toISOString()}
+        open - a "${appBundle}" --args ${CDP_FLAG} "$@"
 `;
             fs.writeFileSync(wrapperPath, scriptContent, { mode: 0o755 });
-            this.log(`Created macOS wrapper: ${ wrapperPath } `);
+            this.log(`Created macOS wrapper: ${wrapperPath} `);
 
             return {
                 success: true,
                 modified: true,
-                message: `Created wrapper script.Launch via: ${ wrapperPath } `,
+                message: `Created wrapper script.Launch via: ${wrapperPath} `,
                 wrapperPath
             };
         } catch (e) {
-            this.log(`Error creating macOS wrapper: ${ e.message } `);
+            this.log(`Error creating macOS wrapper: ${e.message} `);
             return { success: false, modified: false, message: e.message };
         }
     }
@@ -555,8 +551,8 @@ try {
     async _findLinuxShortcuts(ideName) {
         const shortcuts = [];
         const desktopLocations = [
-            path.join(os.homedir(), '.local', 'share', 'applications', `${ ideName.toLowerCase() }.desktop`),
-            `/ usr / share / applications / ${ ideName.toLowerCase() }.desktop`,
+            path.join(os.homedir(), '.local', 'share', 'applications', `${ideName.toLowerCase()}.desktop`),
+            `/ usr / share / applications / ${ideName.toLowerCase()}.desktop`,
         ];
 
         for (const desktopPath of desktopLocations) {
@@ -574,7 +570,7 @@ try {
             }
         }
 
-        this.log(`Found ${ shortcuts.length } Linux.desktop files`);
+        this.log(`Found ${shortcuts.length} Linux.desktop files`);
         return shortcuts;
     }
 
@@ -596,7 +592,7 @@ try {
             } else {
                 content = content.replace(
                     /^(Exec=)(.*)$/m,
-                    `$1$2 ${ CDP_FLAG } `
+                    `$1$2 ${CDP_FLAG} `
                 );
             }
 
@@ -607,10 +603,10 @@ try {
             fs.mkdirSync(userDesktopDir, { recursive: true });
             fs.writeFileSync(targetPath, content);
 
-            this.log(`Modified Linux.desktop: ${ targetPath } `);
-            return { success: true, modified: true, message: `Modified: ${ path.basename(targetPath) } ` };
+            this.log(`Modified Linux.desktop: ${targetPath} `);
+            return { success: true, modified: true, message: `Modified: ${path.basename(targetPath)} ` };
         } catch (e) {
-            this.log(`Error modifying.desktop: ${ e.message } `);
+            this.log(`Error modifying.desktop: ${e.message} `);
             return { success: false, modified: false, message: e.message };
         }
     }
@@ -618,15 +614,15 @@ try {
     // add flag to shortcut if absent, or update port if incorrect
     async ensureShortcutHasFlag(shortcut) {
         // Check if we need to update the port (e.g., from 9222 to 9000)
-        const hasCorrectPort = shortcut.args && shortcut.args.includes(`--remote - debugging - port=${ BASE_CDP_PORT } `);
+        const hasCorrectPort = shortcut.args && shortcut.args.includes(`--remote - debugging - port=${BASE_CDP_PORT} `);
 
         if (shortcut.hasFlag && hasCorrectPort) {
-            this.log(`Shortcut already has correct CDP port ${ BASE_CDP_PORT } `);
+            this.log(`Shortcut already has correct CDP port ${BASE_CDP_PORT} `);
             return { success: true, modified: false, message: 'Already has correct CDP flag' };
         }
 
         if (shortcut.hasFlag && !hasCorrectPort) {
-            this.log(`Shortcut has CDP flag but wrong port, updating to ${ BASE_CDP_PORT }...`);
+            this.log(`Shortcut has CDP flag but wrong port, updating to ${BASE_CDP_PORT}...`);
         }
 
         if (this.platform === 'win32') {
@@ -649,8 +645,8 @@ try {
     async relaunchViaShortcut(shortcut) {
         const workspaceFolders = this.getWorkspaceFolders();
 
-        this.log(`Relaunching via: ${ shortcut.path } `);
-        this.log(`Workspaces: ${ workspaceFolders.join(', ') || '(none)' } `);
+        this.log(`Relaunching via: ${shortcut.path} `);
+        this.log(`Workspaces: ${workspaceFolders.join(', ') || '(none)'} `);
 
         if (this.platform === 'win32') {
             return await this._relaunchWindows(shortcut, workspaceFolders);
@@ -672,33 +668,33 @@ try {
                 const info = await this._readWindowsShortcut(shortcut.path);
                 targetExe = info.target;
             } catch (e) {
-                this.log(`Could not read target from shortcut: ${ e.message } `);
+                this.log(`Could not read target from shortcut: ${e.message} `);
             }
         }
 
-        const batchFileName = `relaunch_${ ideName.replace(/\s+/g, '_') }_${ Date.now() }.bat`;
+        const batchFileName = `relaunch_${ideName.replace(/\s+/g, '_')}_${Date.now()}.bat`;
         const batchPath = path.join(os.tmpdir(), batchFileName);
 
         let commandLine = '';
         if (!targetExe || targetExe.endsWith('.lnk')) {
             this.log('Fallback: Could not resolve EXE, using shortcut path');
-            commandLine = `start "" "${shortcut.path}" ${ folderArgs } `;
+            commandLine = `start "" "${shortcut.path}" ${folderArgs} `;
         } else {
             const safeTarget = `"${targetExe}"`;
-            commandLine = `start "" ${ safeTarget } ${ CDP_FLAG } ${ folderArgs } `;
+            commandLine = `start "" ${safeTarget} ${CDP_FLAG} ${folderArgs} `;
         }
 
         const batchContent = `@echo off
 REM Multi Purpose Agent - IDE Relaunch Script
         timeout / t 5 / nobreak > nul
-${ commandLine }
+${commandLine}
 del "%~f0" & exit
             `;
 
         try {
             fs.writeFileSync(batchPath, batchContent, 'utf8');
-            this.log(`Created relaunch batch: ${ batchPath } `);
-            this.log(`Command: ${ commandLine } `);
+            this.log(`Created relaunch batch: ${batchPath} `);
+            this.log(`Command: ${commandLine} `);
 
             const child = spawn('explorer.exe', [batchPath], {
                 detached: true,
@@ -715,7 +711,7 @@ del "%~f0" & exit
 
             return { success: true };
         } catch (e) {
-            this.log(`Relaunch failed: ${ e.message } `);
+            this.log(`Relaunch failed: ${e.message} `);
             return { success: false, error: e.message };
         }
     }
@@ -725,13 +721,13 @@ del "%~f0" & exit
 
         const scriptPath = path.join(os.tmpdir(), 'relaunch_ide.sh');
         const launchCommand = shortcut.type === 'wrapper'
-            ? `"${shortcut.path}" ${ folderArgs } `
-            : `open - a "${shortcut.path}" --args ${ CDP_FLAG } ${ folderArgs } `;
+            ? `"${shortcut.path}" ${folderArgs} `
+            : `open - a "${shortcut.path}" --args ${CDP_FLAG} ${folderArgs} `;
 
         const scriptContent = `#!/bin/bash
 # Auto Accept - macOS Relaunch Script
 sleep 5
-${ launchCommand }
+${launchCommand}
 # Ensure the app is focused
         if [["${shortcut.path}" == *.app]]; then
         app_name = $(basename "${shortcut.path}".app)
@@ -741,7 +737,7 @@ ${ launchCommand }
 
         try {
             fs.writeFileSync(scriptPath, scriptContent, { mode: 0o755 });
-            this.log(`Created macOS relaunch script: ${ scriptPath } `);
+            this.log(`Created macOS relaunch script: ${scriptPath} `);
 
             const child = spawn('/bin/bash', [scriptPath], {
                 detached: true,
@@ -756,7 +752,7 @@ ${ launchCommand }
 
             return { success: true };
         } catch (e) {
-            this.log(`macOS relaunch error: ${ e.message } `);
+            this.log(`macOS relaunch error: ${e.message} `);
             return { success: false, error: e.message };
         }
     }
@@ -778,21 +774,21 @@ sleep 2
 
 # Method 1: gio launch
         if command - v gio &> /dev/null; then
-    gio launch "${shortcut.path}" ${ folderArgs } 2 > /dev/null && exit 0
+    gio launch "${shortcut.path}" ${folderArgs} 2 > /dev/null && exit 0
         fi
 
 # Method 2: Direct execution from Exec line
-${ execCommand ? `${execCommand} ${folderArgs} 2>/dev/null && exit 0` : '# No Exec line available' }
+${execCommand ? `${execCommand} ${folderArgs} 2>/dev/null && exit 0` : '# No Exec line available'}
 
 # Method 3: gtk - launch fallback
         if command - v gtk - launch &> /dev/null; then
-        gtk - launch "${desktopFileName}" ${ folderArgs } 2 > /dev/null && exit 0
+        gtk - launch "${desktopFileName}" ${folderArgs} 2 > /dev/null && exit 0
         fi
 
 # Method 4: Try to find and run the IDE binary directly
         for bin in "/usr/bin/${ideName}" "/usr/share/${ideName}/bin/${ideName}" "/opt/${ideName}/bin/${ideName}"; do
             if [-x "$bin"]; then
-        "$bin" ${ CDP_FLAG } ${ folderArgs } &
+        "$bin" ${CDP_FLAG} ${folderArgs} &
             exit 0
         fi
         done
@@ -803,7 +799,7 @@ exit 1
 
         try {
             fs.writeFileSync(scriptPath, scriptContent, { mode: 0o755 });
-            this.log(`Created Linux relaunch script: ${ scriptPath } `);
+            this.log(`Created Linux relaunch script: ${scriptPath} `);
 
             const child = spawn('/bin/bash', [scriptPath], {
                 detached: true,
@@ -817,7 +813,7 @@ exit 1
 
             return { success: true };
         } catch (e) {
-            this.log(`Linux relaunch error: ${ e.message } `);
+            this.log(`Linux relaunch error: ${e.message} `);
             return { success: false, error: e.message };
         }
     }
@@ -845,27 +841,27 @@ exit 1
             if (exePath) {
                 const createResult = await this._createWindowsShortcut(ideName, exePath);
                 if (createResult.success) {
-                    this.log(`Created shortcut: ${ createResult.path } `);
+                    this.log(`Created shortcut: ${createResult.path} `);
                     shortcuts = [{
                         path: createResult.path,
                         hasFlag: true,
                         type: 'desktop',
                         target: createResult.target,
-                        args: `${ CDP_FLAG } ${ CDP_ADDITIONAL_FLAGS } `
+                        args: `${CDP_FLAG} ${CDP_ADDITIONAL_FLAGS} `
                     }];
                 } else {
-                    this.log(`Failed to create shortcut: ${ createResult.message } `);
+                    this.log(`Failed to create shortcut: ${createResult.message} `);
                     return {
                         success: false,
                         action: 'error',
-                        message: `Could not create shortcut: ${ createResult.message } `
+                        message: `Could not create shortcut: ${createResult.message} `
                     };
                 }
             } else {
                 return {
                     success: false,
                     action: 'error',
-                    message: `Could not find ${ ideName }.exe.Please ensure the application is installed.`
+                    message: `Could not find ${ideName}.exe.Please ensure the application is installed.`
                 };
             }
         } else if (shortcuts.length === 0) {
@@ -883,7 +879,7 @@ exit 1
             shortcuts.find(s => s.type === 'wrapper' || s.type === 'user') ||
             shortcuts[0];
 
-        this.log(`Using primary shortcut: ${ primaryShortcut.path } (type: ${ primaryShortcut.type })`);
+        this.log(`Using primary shortcut: ${primaryShortcut.path} (type: ${primaryShortcut.type})`);
 
         // Step 4: Ensure shortcut has CDP flag
         const modifyResult = await this.ensureShortcutHasFlag(primaryShortcut);
@@ -891,7 +887,7 @@ exit 1
             return {
                 success: false,
                 action: 'error',
-                message: `Failed to modify shortcut: ${ modifyResult.message } `
+                message: `Failed to modify shortcut: ${modifyResult.message} `
             };
         }
 
@@ -915,7 +911,7 @@ exit 1
             return {
                 success: false,
                 action: 'error',
-                message: `Relaunch failed: ${ relaunchResult.error } `
+                message: `Relaunch failed: ${relaunchResult.error} `
             };
         }
     }
@@ -936,13 +932,13 @@ exit 1
             'Not Now'
         );
 
-        this.log(`User chose: ${ choice } `);
+        this.log(`User chose: ${choice} `);
 
         if (choice === 'Setup & Restart') {
             const result = await this.relaunchWithCDP();
 
             if (!result.success) {
-                vscode.window.showErrorMessage(`Setup failed: ${ result.message } `);
+                vscode.window.showErrorMessage(`Setup failed: ${result.message} `);
             }
 
             return result.success ? 'relaunched' : 'failed';
