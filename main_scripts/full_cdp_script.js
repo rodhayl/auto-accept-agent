@@ -801,8 +801,8 @@
     function isAcceptButton(el) {
         const text = ((el.textContent || el.getAttribute?.('aria-label') || el.getAttribute?.('title') || "") + '').trim().toLowerCase();
         if (text.length === 0 || text.length > 160) return false;
-        const patterns = ['accept', 'run', 'retry', 'apply', 'execute', 'confirm', 'allow once', 'allow', 'continue', 'proceed', 'approve'];
-        const rejects = ['skip', 'reject', 'cancel', 'close', 'refine', 'deny', 'fix all remaining issues', 'fix all remaining', 'fix all'];
+        const patterns = ['accept', 'run', 'retry', 'apply', 'execute', 'confirm', 'allow once', 'allow', 'continue', 'proceed', 'approve', 'always allow'];
+        const rejects = ['skip', 'reject', 'cancel', 'close', 'refine', 'deny', 'fix all remaining issues', 'fix all remaining', 'fix all', "don't", 'not now'];
         if (rejects.some(r => text.includes(r))) return false;
         if (!patterns.some(p => text.includes(p))) return false;
 

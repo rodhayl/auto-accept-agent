@@ -55,11 +55,13 @@
             { pattern: 'execute', exact: true },
             { pattern: 'resume', exact: true },
             { pattern: 'retry', exact: true },
-            { pattern: 'try again', exact: false }
-        ];
-        const REJECT_PATTERNS = ['skip', 'reject', 'cancel', 'discard', 'deny', 'close', 'other'];
-
-        if (!el || !el.textContent) return false;
+            { pattern: 'try again', exact: false },
+            { pattern: 'allow once', exact: true },
+            { pattern: 'always allow', exact: false }
+         ];
+         const REJECT_PATTERNS = ['skip', 'reject', 'cancel', 'discard', 'deny', 'close', 'other', "don't", 'not now'];
+ 
+         if (!el || !el.textContent) return false;
         const text = el.textContent.trim().toLowerCase();
         if (text.length === 0 || text.length > 50) return false;
 
