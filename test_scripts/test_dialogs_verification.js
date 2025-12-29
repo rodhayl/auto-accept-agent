@@ -30,7 +30,8 @@ const mockVscode = {
             mockVscode.lastWarnMsg = { msg, items };
             return items[0];
         },
-        showErrorMessage: () => { }
+        showErrorMessage: () => { },
+        registerUriHandler: () => ({ dispose: () => { } })
     },
     commands: {
         registerCommand: (cmd, callback) => {

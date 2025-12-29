@@ -132,13 +132,9 @@
 
         function isUserAway() {
             const stats = getStats();
-            const now = Date.now();
-            const lastActivityAt = typeof stats.lastUserActivityAt === 'number' ? stats.lastUserActivityAt : 0;
-            const recentlyActive = now - lastActivityAt < 5000;
-            const docFocused = (typeof document !== 'undefined' && typeof document.hasFocus === 'function') ? document.hasFocus() : false;
-
-            if (recentlyActive || docFocused) return false;
-
+            // Simple check: if extension says window is NOT focused, user is away
+            // The extension pushes focus state via __autoAcceptSetFocusState
+            // Default to NOT away (focused) to prevent unwanted tab rotation
             return stats.isWindowFocused === false;
         }
 
@@ -733,10 +729,16 @@
     }
 
     // --- 4. CLICKING LOGIC ---
+
+    /**
+     * Get the interaction roots (containers) where buttons should be searched.
+     * This focuses on agent panel containers to avoid clicking buttons in other parts of the IDE.
+     * Falls back to document.body if no specific containers are found.
+     */
     function getInteractionRoots() {
         const ide = (window.__autoAcceptState?.currentMode || 'cursor').toLowerCase();
-
         const roots = [];
+
         const addRoot = (el) => {
             if (!el) return;
             if (roots.includes(el)) return;
@@ -747,10 +749,33 @@
         };
 
         if (ide === 'antigravity') {
-            queryAll('#antigravity\\.agentPanel').forEach(addRoot);
+            // Try multiple selectors for Antigravity panel
+            const antigravitySelectors = [
+                '#antigravity\\.agentPanel',
+                '[id*="antigravity"]',
+                '[class*="agent-panel"]',
+                '[class*="chat-panel"]',
+                '[class*="launchpad"]',
+                'main',
+                '#root',
+                '#app'
+            ];
+            
+            for (const sel of antigravitySelectors) {
+                queryAll(sel).forEach(addRoot);
+                if (roots.length > 0) break;
+            }
+            
+            // Fallback: use document.body for Antigravity
+            if (roots.length === 0 && document.body) {
+                log('[InteractionRoots] Antigravity: No specific container found, using document.body');
+                roots.push(document.body);
+            }
+            
             return roots;
         }
 
+        // Cursor IDE: Find agent panel containers
         const containerSelectors = [
             '#workbench\\.parts\\.auxiliarybar',
             '#workbench\\.parts\\.sidebar',
@@ -760,6 +785,7 @@
         ];
         const containerSelector = containerSelectors.join(',');
 
+        // Primary: Find containers with input boxes (active chat views)
         const inputBoxes = queryAll('div.full-input-box');
         for (const inputBox of inputBoxes) {
             try {
@@ -768,6 +794,7 @@
             } catch (e) { }
         }
 
+        // Fallback: Search for containers that have input boxes inside
         if (roots.length === 0) {
             for (const sel of containerSelectors) {
                 const els = queryAll(sel);
@@ -782,16 +809,31 @@
             }
         }
 
+        // Next fallback: Use auxiliarybar
         if (roots.length === 0) {
             queryAll('#workbench\\.parts\\.auxiliarybar').forEach(addRoot);
+        }
+
+        // Last resort: use document.body for Cursor
+        if (roots.length === 0 && document.body) {
+            log('[InteractionRoots] Cursor: No specific container found, using document.body');
+            roots.push(document.body);
         }
 
         return roots;
     }
 
+    /**
+     * Query all elements matching selector within interaction roots only.
+     * Falls back to global queryAll if no roots are found.
+     */
     function queryAllInInteractionRoots(selector) {
         const roots = getInteractionRoots();
-        if (roots.length === 0) return [];
+        if (roots.length === 0) {
+            // Fallback to global query if no roots
+            log('[Query] No interaction roots, falling back to global query');
+            return queryAll(selector);
+        }
         const results = [];
         for (const root of roots) {
             try {
@@ -801,9 +843,12 @@
         return results;
     }
 
+    /**
+     * Check if element is inside an interaction root
+     */
     function isInsideInteractionRoot(el) {
         const roots = getInteractionRoots();
-        if (roots.length === 0) return true;
+        if (roots.length === 0) return true; // No roots found, allow all
 
         const ownerDoc = el?.ownerDocument;
         const sameDocRoots = ownerDoc ? roots.filter(r => r && r.ownerDocument === ownerDoc) : [];
@@ -817,6 +862,28 @@
         return false;
     }
 
+    /**
+     * Get element label from textContent, aria-label, or title
+     */
+    function getElementLabel(el) {
+        return ((el?.textContent || el?.getAttribute?.('aria-label') || el?.getAttribute?.('title') || '') + '').trim();
+    }
+
+    /**
+     * Check if text matches an accept button pattern
+     */
+    function matchesAcceptText(text) {
+        const t = (text || '').trim().toLowerCase();
+        if (t.length === 0) return false;
+        const patterns = ['accept', 'run', 'retry', 'apply', 'execute', 'confirm', 'allow once', 'allow', 'continue', 'proceed', 'approve'];
+        const rejects = ['skip', 'reject', 'cancel', 'close', 'refine', 'deny', 'fix all remaining issues', 'fix all remaining', 'fix all'];
+        if (rejects.some(r => t.includes(r))) return false;
+        return patterns.some(p => t.includes(p));
+    }
+
+    /**
+     * Check if button text should be disallowed (dangerous operations)
+     */
     function isDisallowedButtonText(text) {
         const t = (text || '').trim().toLowerCase();
         if (!t) return false;
@@ -824,12 +891,43 @@
     }
 
     function isAcceptButton(el) {
-        const text = ((el.textContent || el.getAttribute?.('aria-label') || el.getAttribute?.('title') || "") + '').trim().toLowerCase();
-        if (text.length === 0 || text.length > 160) return false;
-        const patterns = ['accept', 'run', 'retry', 'apply', 'execute', 'confirm', 'allow once', 'allow', 'continue', 'proceed', 'approve', 'always allow'];
-        const rejects = ['skip', 'reject', 'cancel', 'close', 'refine', 'deny', 'fix all remaining issues', 'fix all remaining', 'fix all', "don't", 'not now'];
-        if (rejects.some(r => text.includes(r))) return false;
-        if (!patterns.some(p => text.includes(p))) return false;
+        // Get text from textContent, aria-label, or title
+        const rawText = ((el.textContent || el.getAttribute?.('aria-label') || el.getAttribute?.('title') || "") + '').trim();
+        const text = rawText.toLowerCase();
+        
+        if (text.length === 0) {
+            return false;
+        }
+        if (text.length > 160) {
+            return false;
+        }
+
+        // Patterns to match (expanded for Antigravity)
+        const patterns = [
+            'accept', 'run', 'retry', 'apply', 'execute', 'confirm', 
+            'allow once', 'allow', 'continue', 'proceed', 'approve', 
+            'always allow', 'yes', 'ok', 'save', 'submit', 'done',
+            'create', 'add', 'install', 'update', 'send'
+        ];
+        // Patterns to reject
+        const rejects = ['skip', 'reject', 'cancel', 'close', 'refine', 'deny', 'fix all remaining issues', 'fix all remaining', 'fix all', "don't", 'not now', 'settings', 'help', 'feedback'];
+
+        if (rejects.some(r => text.includes(r))) {
+            return false;
+        }
+        
+        // Check class names for button-like patterns (Antigravity specific)
+        const className = (el.className || '').toLowerCase();
+        const hasButtonClass = className.includes('button') || className.includes('btn') || className.includes('action') || className.includes('primary') || className.includes('accept');
+        
+        // For Antigravity: if it has button-like class and is small enough, consider it
+        const ide = window.__autoAcceptState?.ide || '';
+        if (ide === 'antigravity' && hasButtonClass && text.length < 30) {
+            log(`[isAcceptButton] MATCH via class: "${rawText.substring(0, 30)}" class contains button-like pattern`);
+            // Fall through to check visibility
+        } else if (!patterns.some(p => text.includes(p))) {
+            return false;
+        }
 
         // Check if this is a command execution button by looking for "run command" or similar
         const isCommandButton = text.includes('run command') || text.includes('execute') || text.includes('run');
@@ -848,19 +946,6 @@
         return style.display !== 'none' && rect.width > 0 && style.pointerEvents !== 'none' && !el.disabled;
     }
 
-    function matchesAcceptText(text) {
-        const t = (text || '').trim().toLowerCase();
-        if (t.length === 0) return false;
-        const patterns = ['accept', 'run', 'retry', 'apply', 'execute', 'confirm', 'allow once', 'allow', 'continue', 'proceed', 'approve'];
-        const rejects = ['skip', 'reject', 'cancel', 'close', 'refine', 'deny', 'fix all remaining issues', 'fix all remaining', 'fix all'];
-        if (rejects.some(r => t.includes(r))) return false;
-        return patterns.some(p => t.includes(p));
-    }
-
-    function getElementLabel(el) {
-        return ((el?.textContent || el?.getAttribute?.('aria-label') || el?.getAttribute?.('title') || '') + '').trim();
-    }
-
     /**
      * Check if an element is still visible in the DOM.
      * @param {Element} el - Element to check
@@ -874,47 +959,35 @@
     }
 
     /**
-     * Wait for an element to disappear (removed from DOM or hidden).
+     * Wait for click effect (element disappears, becomes disabled, or text changes)
      * @param {Element} el - Element to watch
+     * @param {string} beforeText - Text before click
      * @param {number} timeout - Max time to wait in ms
-     * @returns {Promise<boolean>} True if element disappeared
+     * @returns {Promise<boolean>} True if click effect was detected
      */
-    function waitForDisappear(el, timeout = 500) {
-        return new Promise(resolve => {
-            const startTime = Date.now();
-            const check = () => {
-                if (!isElementVisible(el)) {
-                    resolve(true);
-                } else if (Date.now() - startTime >= timeout) {
-                    resolve(false);
-                } else {
-                    requestAnimationFrame(check);
-                }
-            };
-            // Give a small initial delay for the click to register
-            setTimeout(check, 50);
-        });
-    }
-
     function waitForClickEffect(el, beforeText, timeout = 1500) {
         return new Promise(resolve => {
             const startTime = Date.now();
-            const checkInterval = 75; // Check every 75ms instead of every frame
-            
+            const checkInterval = 75; // Check every 75ms
+
             const check = () => {
+                // Check if element disappeared
                 if (!isElementVisible(el)) return resolve(true);
 
+                // Check if text changed to non-accept text
                 const afterText = getElementLabel(el);
                 const ariaDisabled = (el.getAttribute?.('aria-disabled') || '').toLowerCase() === 'true';
                 if (el.disabled || ariaDisabled) return resolve(true);
 
                 if (beforeText && afterText && beforeText !== afterText && !matchesAcceptText(afterText)) return resolve(true);
 
+                // Check if pointer events disabled
                 const style = window.getComputedStyle(el);
                 if (style.pointerEvents === 'none') return resolve(true);
 
+                // Timeout check
                 if (Date.now() - startTime >= timeout) return resolve(false);
-                
+
                 setTimeout(check, checkInterval);
             };
             setTimeout(check, 50);
@@ -923,16 +996,30 @@
 
     async function performClick(selectors) {
         const found = [];
+        // Use queryAllInInteractionRoots to focus on agent panels
         selectors.forEach(s => queryAllInInteractionRoots(s).forEach(el => found.push(el)));
+
         let clicked = 0;
         let verified = 0;
         const uniqueFound = [...new Set(found)];
         const clickedTargets = new Set();
 
+        log(`[performClick] Found ${uniqueFound.length} candidate elements from selectors: ${selectors.join(', ')}`);
+
         if (uniqueFound.length === 0) return 0;
+
+        // Debug: Log first 10 button texts
+        const debugLimit = Math.min(10, uniqueFound.length);
+        for (let i = 0; i < debugLimit; i++) {
+            const el = uniqueFound[i];
+            const text = ((el.textContent || el.getAttribute?.('aria-label') || el.getAttribute?.('title') || "") + '').trim();
+            const shortText = text.substring(0, 50).replace(/\n/g, ' ');
+            log(`[performClick] Button ${i}: "${shortText}" tag=${el.tagName} class="${(el.className || '').substring(0, 40)}"`);
+        }
 
         for (const el of uniqueFound) {
             if (isAcceptButton(el)) {
+                // Get the closest button or role="button" element
                 const target = el.closest ? (el.closest('button,[role="button"]') || el) : el;
                 if (clickedTargets.has(target)) continue;
                 if (!isInsideInteractionRoot(target)) continue;
@@ -945,9 +1032,13 @@
                 const beforeText = buttonText;
                 log(`Clicking: "${buttonText}"`);
 
+                // Try scrolling into view
                 try { target.scrollIntoView?.({ block: 'center', inline: 'center' }); } catch (e) { }
+
+                // Try native click first
                 try { target.click?.(); } catch (e) { }
 
+                // Also dispatch synthetic events for React/Vue apps
                 try {
                     const eventInit = { view: window, bubbles: true, cancelable: true };
                     const pointerSupported = typeof PointerEvent !== 'undefined';
@@ -962,11 +1053,14 @@
 
                 clicked++;
 
+                // Wait for click effect with improved verification
                 const effect = await waitForClickEffect(target, beforeText);
                 if (effect) {
                     Analytics.trackClick(buttonText, log);
                     verified++;
                     log(`[Stats] Click verified`);
+                } else {
+                    log(`[Stats] Click not verified (button still present after ${1500}ms)`);
                 }
             }
         }
@@ -977,7 +1071,7 @@
         return verified;
     }
 
-    // --- 4. POLL LOOPS ---
+    // --- 5. POLL LOOPS ---
     async function cursorLoop(sid) {
         log('[Loop] cursorLoop STARTED');
         let index = 0;
@@ -987,19 +1081,33 @@
                 cycle++;
                 log(`[Loop] Cycle ${cycle}: Starting...`);
 
+                // Check if we have valid interaction roots
                 const roots = getInteractionRoots();
                 if (roots.length === 0) {
+                    log(`[Loop] Cycle ${cycle}: No interaction roots found, waiting...`);
                     await new Promise(r => setTimeout(r, 1500));
                     continue;
                 }
 
-                const clicked = await performClick(['button', 'div[role="button"]', '[aria-label*="Accept"]', '[aria-label*="Run"]', '[title*="Accept"]', '[title*="Run"]', '[class*="button"]', '[class*="anysphere"]']);
+                // Use expanded selectors for better button detection
+                const clicked = await performClick([
+                    'button',
+                    'div[role="button"]',
+                    '[aria-label*="Accept"]',
+                    '[aria-label*="Run"]',
+                    '[title*="Accept"]',
+                    '[title*="Run"]',
+                    '[class*="button"]',
+                    '[class*="anysphere"]'
+                ]);
                 log(`[Loop] Cycle ${cycle}: Clicked ${clicked} buttons`);
 
                 await new Promise(r => setTimeout(r, 800));
 
+                // Check if user is away for tab rotation
                 const isAway = (Analytics && typeof Analytics.isUserAway === 'function') ? Analytics.isUserAway() : false;
 
+                // Try multiple selectors for Cursor tabs
                 const tabSelectors = [
                     'ul[role="tablist"] li[role="tab"]',
                     '[role="tablist"] [role="tab"]',
@@ -1021,6 +1129,7 @@
 
                 updateTabNames(tabs);
 
+                // Only rotate tabs when user is away (background mode behavior)
                 if (isAway && tabs.length > 0) {
                     const targetTab = tabs[index % tabs.length];
                     const tabLabel = targetTab.getAttribute('aria-label') || targetTab.textContent?.trim() || 'unnamed tab';
@@ -1043,7 +1152,6 @@
                 await new Promise(r => setTimeout(r, 2000));
             }
         }
-        // Log specific stop reason
         const stopReason = !window.__autoAcceptState.isRunning ? 'isRunning=false' : `sessionID changed (expected ${sid}, got ${window.__autoAcceptState.sessionID})`;
         log(`[Loop] cursorLoop STOPPED - reason: ${stopReason}`);
     }
@@ -1052,21 +1160,41 @@
         log('[Loop] antigravityLoop STARTED');
         let index = 0;
         let cycle = 0;
+        let domDumpDone = false;
         while (window.__autoAcceptState.isRunning && window.__autoAcceptState.sessionID === sid) {
             try {
                 cycle++;
                 log(`[Loop] Cycle ${cycle}: Starting...`);
 
+                // ONE-TIME DOM DUMP for debugging (first 3 cycles)
+                if (!domDumpDone && cycle <= 3) {
+                    try {
+                        const allBtns = document.querySelectorAll('button, [role="button"], div[class*="button"], [class*="btn"], .bg-ide-button-background');
+                        log(`[DOM DUMP] Found ${allBtns.length} button-like elements on page`);
+                        for (let i = 0; i < Math.min(15, allBtns.length); i++) {
+                            const b = allBtns[i];
+                            const txt = (b.textContent || '').trim().substring(0, 40).replace(/\\n/g, ' ');
+                            const cls = (b.className || '').substring(0, 50);
+                            const aria = b.getAttribute('aria-label') || '';
+                            log(`[DOM DUMP] Btn ${i}: text="${txt}" class="${cls}" aria="${aria}"`);
+                        }
+                        if (cycle >= 3) domDumpDone = true;
+                    } catch (e) {
+                        log(`[DOM DUMP] Error: ${e.message}`);
+                    }
+                }
+
+                // Check if we have valid interaction roots
                 const roots = getInteractionRoots();
+                log(`[Loop] Cycle ${cycle}: Found ${roots.length} interaction roots`);
+                
                 if (roots.length === 0) {
+                    log(`[Loop] Cycle ${cycle}: No interaction roots found, waiting...`);
                     await new Promise(r => setTimeout(r, 1500));
                     continue;
                 }
 
-                const isAway = (Analytics && typeof Analytics.isUserAway === 'function') ? Analytics.isUserAway() : false;
-
-                // FIRST: Check for completion badges (Good/Bad) for logging, but DON'T block clicking
-                // The presence of an "Accept" button is the authoritative signal that action is needed.
+                // FIRST: Check for completion badges (Good/Bad) BEFORE clicking
                 const allSpans = queryAllInInteractionRoots('span');
                 const feedbackBadges = allSpans.filter(s => {
                     const t = s.textContent.trim();
@@ -1074,24 +1202,35 @@
                 });
                 const hasBadge = feedbackBadges.length > 0;
 
-                log(`[Loop] Cycle ${cycle}: Found ${feedbackBadges.length} Good/Bad badges`);
+                log(`[Loop] Cycle ${cycle}: Found ${feedbackBadges.length} Good/Bad badges, ${allSpans.length} total spans`);
 
-                // Always try to click if buttons are present
+                // Always try to click buttons (don't skip based on badge - the presence of Accept buttons is authoritative)
                 let clicked = 0;
-                // Expanded selectors to be more robust against UI changes
-                clicked = await performClick(['.bg-ide-button-background', 'button', 'div[role="button"]', '[aria-label*="Accept"]', '[aria-label*="Run"]', '[title*="Accept"]', '[title*="Run"]', '[class*="button"]']);
-
-                if (clicked > 0) {
-                    log(`[Loop] Cycle ${cycle}: Clicked ${clicked} accept buttons`);
-                } else if (hasBadge) {
-                    log(`[Loop] Cycle ${cycle}: No buttons found and conversation seems done (has badge)`);
+                // Click accept/run buttons (Antigravity specific selectors)
+                clicked = await performClick([
+                    '.bg-ide-button-background',
+                    'button',
+                    'div[role="button"]',
+                    '[aria-label*="Accept"]',
+                    '[aria-label*="Run"]',
+                    '[title*="Accept"]',
+                    '[title*="Run"]',
+                    '[class*="button"]'
+                ]);
+                log(`[Loop] Cycle ${cycle}: Clicked ${clicked} accept buttons`);
+                
+                if (hasBadge && clicked === 0) {
+                    log(`[Loop] Cycle ${cycle}: Conversation appears DONE (has badge, no buttons)`);
                 }
-
 
                 await new Promise(r => setTimeout(r, 800));
 
-                let clickedTabName = null;
+                // Check if user is away
+                const isAway = (Analytics && typeof Analytics.isUserAway === 'function') ? Analytics.isUserAway() : false;
+
+                // Only do tab navigation when away
                 if (isAway) {
+                    // Optional: click New Tab button to cycle
                     const nt = queryAllInInteractionRoots("[data-tooltip-id='new-conversation-tooltip']")[0];
                     if (nt) {
                         log(`[Loop] Cycle ${cycle}: Clicking New Tab button`);
@@ -1099,10 +1238,13 @@
                     }
                     await new Promise(r => setTimeout(r, 1000));
 
+                    // Re-query tabs after potential navigation
                     const tabsAfter = queryAllInInteractionRoots('button.grow');
                     log(`[Loop] Cycle ${cycle}: Found ${tabsAfter.length} tabs`);
                     updateTabNames(tabsAfter);
 
+                    // Click next tab in rotation and check its completion
+                    let clickedTabName = null;
                     if (tabsAfter.length > 0) {
                         const targetTab = tabsAfter[index % tabsAfter.length];
                         clickedTabName = stripTimeSuffix(targetTab.textContent);
@@ -1110,29 +1252,32 @@
                         targetTab.dispatchEvent(new MouseEvent('click', { view: window, bubbles: true, cancelable: true }));
                         index++;
                     }
+
+                    // Wait longer for content to load (1.5s instead of 0.5s)
+                    await new Promise(r => setTimeout(r, 1500));
+
+                    // Check for completion badges (Good/Bad) after clicking
+                    const allSpansAfter = queryAllInInteractionRoots('span');
+                    const feedbackTexts = allSpansAfter
+                        .filter(s => {
+                            const t = s.textContent.trim();
+                            return t === 'Good' || t === 'Bad';
+                        })
+                        .map(s => s.textContent.trim());
+
+                    log(`[Loop] Cycle ${cycle}: Found ${feedbackTexts.length} Good/Bad badges`);
+
+                    // Update completion status for the tab we just clicked
+                    if (clickedTabName && feedbackTexts.length > 0) {
+                        updateConversationCompletionState(clickedTabName, 'done');
+                    } else if (clickedTabName && !window.__autoAcceptState.completionStatus[clickedTabName]) {
+                        // Leave as undefined (WAITING)
+                    }
                 } else {
+                    // User is focused, just update tab names without navigation
                     const tabsAfter = queryAllInInteractionRoots('button.grow');
-                    log(`[Loop] Cycle ${cycle}: Found ${tabsAfter.length} tabs`);
                     updateTabNames(tabsAfter);
-                    log(`[Loop] Cycle ${cycle}: User focused, skipping tab rotation`);
-                }
-
-                // Wait longer for content to load (1.5s instead of 0.5s)
-                await new Promise(r => setTimeout(r, 1500));
-
-                const allSpansAfter = queryAllInInteractionRoots('span');
-                const feedbackTexts = allSpansAfter
-                    .filter(s => {
-                        const t = s.textContent.trim();
-                        return t === 'Good' || t === 'Bad';
-                    })
-                    .map(s => s.textContent.trim());
-
-                log(`[Loop] Cycle ${cycle}: Found ${feedbackTexts.length} Good/Bad badges`);
-
-                if (clickedTabName && feedbackTexts.length > 0) {
-                    updateConversationCompletionState(clickedTabName, 'done');
-                } else if (clickedTabName && !window.__autoAcceptState.completionStatus[clickedTabName]) {
+                    log(`[Loop] Cycle ${cycle}: User focused, skipping tab navigation`);
                 }
 
                 const state = window.__autoAcceptState;
@@ -1147,7 +1292,6 @@
                 await new Promise(r => setTimeout(r, 2000));
             }
         }
-        // Log specific stop reason
         const stopReason = !window.__autoAcceptState.isRunning ? 'isRunning=false' : `sessionID changed (expected ${sid}, got ${window.__autoAcceptState.sessionID})`;
         log(`[Loop] antigravityLoop STOPPED - reason: ${stopReason}`);
     }
@@ -1331,7 +1475,7 @@
                     while (state.isRunning && state.sessionID === sid) {
                         cycle++;
                         try {
-                            const clicked = await performClick(['button', 'div[role="button"]', '[aria-label*="Accept"]', '[aria-label*="Run"]', '[title*="Accept"]', '[title*="Run"]', '[class*="button"]', '[class*="anysphere"]']);
+                            const clicked = await performClick(['button', 'div[role="button"]', '[class*="button"]', '[class*="anysphere"]']);
                             if (clicked > 0) {
                                 log(`[Static] Cycle ${cycle}: Clicked ${clicked} buttons`);
                             }

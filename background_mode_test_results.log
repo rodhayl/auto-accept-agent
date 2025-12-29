@@ -1,423 +1,673 @@
 === BACKGROUND MODE TEST SUITE ===
-Started: 2025-12-29T14:47:15.341Z
+Started: 2025-12-29T20:27:10.751Z
 
-[14:47:15] 
-[14:47:15] ============================================================
-[14:47:15]   1. SCRIPT LOADING & SYNTAX
-[14:47:15] ============================================================
-[14:47:15] ✓ PASS: Script file exists - C:\Users\rulfe\GitHub\auto-accept-agent\main_scripts\full_cdp_script.js
-[14:47:15] ✓ PASS: Script syntax is valid
-[14:47:15] ✓ PASS: Script length reasonable - 57964 bytes
-[14:47:15] ✓ PASS: Script contains IIFE wrapper
-[14:47:15] ✓ PASS: Script uses strict mode
-[14:47:15] 
-[14:47:15] ============================================================
-[14:47:15]   2. SANDBOX EXECUTION
-[14:47:15] ============================================================
-[14:47:15]   [Script] [Multi Purpose Agent] [Analytics] State initialized
-[14:47:15]   [Script] [Multi Purpose Agent] [Focus] Initialized (awaiting extension sync)
-[14:47:15]   [Script] [Multi Purpose Agent] [Analytics] Initialized
-[14:47:15]   [Script] [Multi Purpose Agent] Core Bundle Initialized.
-[14:47:15] ✓ PASS: Script executes without error
-[14:47:15] 
-[14:47:15] ============================================================
-[14:47:15]   3. API EXPOSURE
-[14:47:15] ============================================================
-[14:47:15] ✓ PASS: __autoAcceptStart is a function
-[14:47:15] ✓ PASS: __autoAcceptStop is a function
-[14:47:15] ✓ PASS: __autoAcceptState is initialized
-[14:47:15] ✓ PASS: State has all required properties - ["isRunning","tabNames","completionStatus","sessionID","currentMode","isBackgroundMode","lastPollInterval","startTimes","bannedCommands","isPro","stats"]
-[14:47:15] ✓ PASS: Initial state values correct
-[14:47:15] 
-[14:47:15] ============================================================
-[14:47:15]   4. BACKGROUND MODE - CURSOR
-[14:47:15] ============================================================
-[14:47:15]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=true, poll=1000
-[14:47:15]   [Script] [Multi Purpose Agent] Starting new session: sid=1
-[14:47:15]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: true, isPro: true)
-[14:47:15]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] Styles injected
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
-[14:47:15]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting cursor loop...
-[14:47:15]   [Script] [Multi Purpose Agent] [Loop] cursorLoop STARTED
-[14:47:15]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
-[14:47:15] ✓ PASS: Start background mode (Cursor) - isRunning=true
-[14:47:15] ✓ PASS: Session ID incremented - sessionID=1
-[14:47:15] ✓ PASS: Current mode set to cursor - currentMode=cursor
-[14:47:15] ✓ PASS: isBackgroundMode flag set
-[14:47:15]   [Script] [Multi Purpose Agent] Agent Stopped.
-[14:47:15] ✓ PASS: Stop background mode - isRunning=false
-[14:47:15] 
-[14:47:15] ============================================================
-[14:47:15]   5. BACKGROUND MODE - ANTIGRAVITY
-[14:47:15] ============================================================
-[14:47:15]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=antigravity, isPro=true, isBG=true, poll=1000
-[14:47:15]   [Script] [Multi Purpose Agent] Starting new session: sid=2
-[14:47:15]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: antigravity, BG: true, isPro: true)
-[14:47:15]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] Styles injected
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
-[14:47:15]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting antigravity loop...
-[14:47:15]   [Script] [Multi Purpose Agent] [Loop] antigravityLoop STARTED
-[14:47:15]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
-[14:47:15] ✓ PASS: Start background mode (Antigravity)
-[14:47:15]   [Script] [Multi Purpose Agent] Agent Stopped.
-[14:47:15] 
-[14:47:15] ============================================================
-[14:47:15]   6. NON-BACKGROUND (SIMPLE) MODE
-[14:47:15] ============================================================
-[14:47:15]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=false, isBG=false, poll=500
-[14:47:15]   [Script] [Multi Purpose Agent] Starting new session: sid=3
-[14:47:15]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: false, isPro: false)
-[14:47:15]   [Script] [Multi Purpose Agent] Starting static poll loop with interval 500ms...
-[14:47:15] ✓ PASS: Start simple mode
-[14:47:15] ✓ PASS: Simple mode isBackgroundMode=false
-[14:47:15]   [Script] [Multi Purpose Agent] Agent Stopped.
-[14:47:15] 
-[14:47:15] ============================================================
-[14:47:15]   7. MODE SWITCHING
-[14:47:15] ============================================================
-[14:47:15]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=false, isBG=false, poll=1000
-[14:47:15]   [Script] [Multi Purpose Agent] Starting new session: sid=4
-[14:47:15]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: false, isPro: false)
-[14:47:15]   [Script] [Multi Purpose Agent] Starting static poll loop with interval 1000ms...
-[14:47:15]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=true, poll=1000
-[14:47:15]   [Script] [Multi Purpose Agent] Stopping previous session to switch modes...
-[14:47:15]   [Script] [Multi Purpose Agent] Starting new session: sid=5
-[14:47:15]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: true, isPro: true)
-[14:47:15]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] Styles injected
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
-[14:47:15]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting cursor loop...
-[14:47:15]   [Script] [Multi Purpose Agent] [Loop] cursorLoop STARTED
-[14:47:15]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
-[14:47:15] ✓ PASS: Mode switch increments session - 4 -> 5
-[14:47:15]   [Script] [Multi Purpose Agent] Agent Stopped.
-[14:47:15]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=true, poll=1000
-[14:47:15]   [Script] [Multi Purpose Agent] Starting new session: sid=6
-[14:47:15]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: true, isPro: true)
-[14:47:15]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] Styles injected
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
-[14:47:15]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting cursor loop...
-[14:47:15]   [Script] [Multi Purpose Agent] [Loop] cursorLoop STARTED
-[14:47:15]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
-[14:47:15]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=antigravity, isPro=true, isBG=true, poll=1000
-[14:47:15]   [Script] [Multi Purpose Agent] Stopping previous session to switch modes...
-[14:47:15]   [Script] [Multi Purpose Agent] Starting new session: sid=7
-[14:47:15]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: antigravity, BG: true, isPro: true)
-[14:47:15]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
-[14:47:15]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting antigravity loop...
-[14:47:15]   [Script] [Multi Purpose Agent] [Loop] antigravityLoop STARTED
-[14:47:15]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
-[14:47:15] ✓ PASS: IDE switch increments session - cursor -> antigravity
-[14:47:15]   [Script] [Multi Purpose Agent] Agent Stopped.
-[14:47:15] 
-[14:47:15] ============================================================
-[14:47:15]   8. IDEMPOTENCY
-[14:47:15] ============================================================
-[14:47:15]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=true, poll=1000
-[14:47:15]   [Script] [Multi Purpose Agent] Starting new session: sid=8
-[14:47:15]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: true, isPro: true)
-[14:47:15]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] Styles injected
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
-[14:47:15]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting cursor loop...
-[14:47:15]   [Script] [Multi Purpose Agent] [Loop] cursorLoop STARTED
-[14:47:15]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
-[14:47:15]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=true, poll=1000
-[14:47:15]   [Script] [Multi Purpose Agent] Already running with same config, skipping restart
-[14:47:15] ✓ PASS: Same config is idempotent - sid stayed at 8
-[14:47:15]   [Script] [Multi Purpose Agent] Agent Stopped.
-[14:47:15]   [Script] [Multi Purpose Agent] Agent Stopped.
-[14:47:15]   [Script] [Multi Purpose Agent] Agent Stopped.
-[14:47:15]   [Script] [Multi Purpose Agent] Agent Stopped.
-[14:47:15] ✓ PASS: Multiple stops are safe
-[14:47:15] 
-[14:47:15] ============================================================
-[14:47:15]   9. EDGE CASES - CONFIG HANDLING
-[14:47:15] ============================================================
-[14:47:15]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=false, poll=1000
-[14:47:15]   [Script] [Multi Purpose Agent] Starting new session: sid=9
-[14:47:15]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: false, isPro: true)
-[14:47:15]   [Script] [Multi Purpose Agent] Starting static poll loop with interval 1000ms...
-[14:47:15] ✓ PASS: Empty config handled
-[14:47:15]   [Script] [Multi Purpose Agent] Agent Stopped.
-[14:47:15]   [Script] [Multi Purpose Agent] ERROR in __autoAcceptStart: Cannot read properties of undefined (reading 'ide')
-[14:47:15]   [Script ERROR] [Multi Purpose Agent] Start error: TypeError: Cannot read properties of undefined (reading 'ide')
-[14:47:15] ✓ PASS: Undefined config handled gracefully - Script did not crash
-[14:47:15]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=true, poll=1000
-[14:47:15]   [Script] [Multi Purpose Agent] Starting new session: sid=10
-[14:47:15]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: true, isPro: true)
-[14:47:15]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] Styles injected
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
-[14:47:15]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting cursor loop...
-[14:47:15]   [Script] [Multi Purpose Agent] [Loop] cursorLoop STARTED
-[14:47:15]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
-[14:47:15] ✓ PASS: Null IDE handled
-[14:47:15]   [Script] [Multi Purpose Agent] Agent Stopped.
-[14:47:15]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=unknown_ide, isPro=true, isBG=true, poll=1000
-[14:47:15]   [Script] [Multi Purpose Agent] Starting new session: sid=11
-[14:47:15]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: unknown_ide, BG: true, isPro: true)
-[14:47:15]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] Styles injected
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
-[14:47:15]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting unknown_ide loop...
-[14:47:15]   [Script] [Multi Purpose Agent] [Loop] antigravityLoop STARTED
-[14:47:15]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
-[14:47:15] ✓ PASS: Unknown IDE handled gracefully
-[14:47:15]   [Script] [Multi Purpose Agent] Agent Stopped.
-[14:47:15]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=true, poll=1000
-[14:47:15]   [Script] [Multi Purpose Agent] Starting new session: sid=12
-[14:47:15]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: true, isPro: true)
-[14:47:15]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] Styles injected
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
-[14:47:15]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting cursor loop...
-[14:47:15]   [Script] [Multi Purpose Agent] [Loop] cursorLoop STARTED
-[14:47:15]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
-[14:47:15] ✓ PASS: IDE name case insensitive
-[14:47:15]   [Script] [Multi Purpose Agent] Agent Stopped.
-[14:47:15] 
-[14:47:15] ============================================================
-[14:47:15]   10. EDGE CASES - FREE TIER
-[14:47:15] ============================================================
-[14:47:15]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=false, isBG=true, poll=1000
-[14:47:15]   [Script] [Multi Purpose Agent] Starting new session: sid=13
-[14:47:15]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: true, isPro: false)
-[14:47:15]   [Script] [Multi Purpose Agent] [BG] Background mode requires Pro, showing overlay anyway...
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] Styles injected
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
-[14:47:15]   [Script] [Multi Purpose Agent] [Loop] cursorLoop STARTED
-[14:47:15]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
-[14:47:15] ✓ PASS: Free tier + background mode works
-[14:47:15]   [Script] [Multi Purpose Agent] Agent Stopped.
-[14:47:15] 
-[14:47:15] ============================================================
-[14:47:15]   11. SCRIPT CONTENT CHECKS
-[14:47:15] ============================================================
-[14:47:15] ✓ PASS: No direct innerHTML assignments - Found 0 occurrences
-[14:47:15] ✓ PASS: No TrustedTypes createPolicy calls
-[14:47:15] ✓ PASS: Uses pure DOM construction
-[14:47:15] ✓ PASS: No eval or Function constructor
-[14:47:15] ✓ PASS: No document.write
-[14:47:15] ✓ PASS: No window.open
-[14:47:15] 
-[14:47:15] ============================================================
-[14:47:15]   12. OVERLAY LOGIC
-[14:47:15] ============================================================
-[14:47:15] ✓ PASS: Overlay ID constant defined
-[14:47:15] ✓ PASS: showOverlay function exists
-[14:47:15] ✓ PASS: updateOverlay function exists
-[14:47:15] ✓ PASS: hideOverlay function exists
-[14:47:15] ✓ PASS: Overlay styles defined
-[14:47:15] 
-[14:47:15] ============================================================
-[14:47:15]   13. LOOP LOGIC
-[14:47:15] ============================================================
-[14:47:15] ✓ PASS: cursorLoop function exists
-[14:47:15] ✓ PASS: antigravityLoop function exists
-[14:47:15] ✓ PASS: performClick function exists
-[14:47:15] ✓ PASS: isAcceptButton function exists
-[14:47:15] ✓ PASS: Loops check session ID
-[14:47:15] ✓ PASS: Loops check isRunning flag
-[14:47:15] 
-[14:47:15] ============================================================
-[14:47:15]   14. BUTTON DETECTION LOGIC
-[14:47:15] ============================================================
-[14:47:15] ✓ PASS: Accept pattern defined
-[14:47:15] ✓ PASS: Run pattern defined
-[14:47:15] ✓ PASS: Reject patterns defined
-[14:47:15] ✓ PASS: Button visibility checked
-[14:47:15] 
-[14:47:15] ============================================================
-[14:47:15]   15. UTILS FUNCTIONS
-[14:47:15] ============================================================
-[14:47:15] ✓ PASS: getDocuments function exists
-[14:47:15] ✓ PASS: queryAll function exists
-[14:47:15] ✓ PASS: updateTabNames function exists
-[14:47:15] ✓ PASS: stripTimeSuffix function exists
-[14:47:15] 
-[14:47:15] ============================================================
-[14:47:15]   16. BROWSER CONTEXT GUARD
-[14:47:15] ============================================================
-[14:47:15] ✓ PASS: Window undefined guard exists
-[14:47:15] 
-[14:47:15] ============================================================
-[14:47:15]   17. ADVANCED EDGE CASES
-[14:47:15] ============================================================
-[14:47:15]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=true, poll=1000
-[14:47:15]   [Script] [Multi Purpose Agent] Starting new session: sid=14
-[14:47:15]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: true, isPro: true)
-[14:47:15]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] Styles injected
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
-[14:47:15]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting cursor loop...
-[14:47:15]   [Script] [Multi Purpose Agent] [Loop] cursorLoop STARTED
-[14:47:15]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
-[14:47:15]   [Script] [Multi Purpose Agent] [Focus] Initialized (awaiting extension sync)
-[14:47:15]   [Script] [Multi Purpose Agent] [Analytics] Initialized
-[14:47:15]   [Script] [Multi Purpose Agent] Core Bundle Initialized.
-[14:47:15] ✓ PASS: State preserved on re-injection - 14 -> 14
-[14:47:15]   [Script] [Multi Purpose Agent] Agent Stopped.
-[14:47:15] ✓ PASS: tabNames is always an array
-[14:47:15] ✓ PASS: completionStatus is always an object
-[14:47:15] ✓ PASS: startTimes is always an object
-[14:47:15]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=true, poll=1000
-[14:47:15]   [Script] [Multi Purpose Agent] Starting new session: sid=15
-[14:47:15]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: true, isPro: true)
-[14:47:15]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] Styles injected
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
-[14:47:15]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting cursor loop...
-[14:47:15]   [Script] [Multi Purpose Agent] [Loop] cursorLoop STARTED
-[14:47:15]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
-[14:47:15]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=antigravity, isPro=true, isBG=true, poll=1000
-[14:47:15]   [Script] [Multi Purpose Agent] Stopping previous session to switch modes...
-[14:47:15]   [Script] [Multi Purpose Agent] Starting new session: sid=16
-[14:47:15]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: antigravity, BG: true, isPro: true)
-[14:47:15]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
-[14:47:15]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting antigravity loop...
-[14:47:15]   [Script] [Multi Purpose Agent] [Loop] antigravityLoop STARTED
-[14:47:15]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
-[14:47:15]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=false, isBG=false, poll=1000
-[14:47:15]   [Script] [Multi Purpose Agent] Stopping previous session to switch modes...
-[14:47:15]   [Script] [Multi Purpose Agent] Starting new session: sid=17
-[14:47:15]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: false, isPro: false)
-[14:47:15]   [Script] [Multi Purpose Agent] Starting static poll loop with interval 1000ms...
-[14:47:15]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=true, poll=1000
-[14:47:15]   [Script] [Multi Purpose Agent] Stopping previous session to switch modes...
-[14:47:15]   [Script] [Multi Purpose Agent] Starting new session: sid=18
-[14:47:15]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: true, isPro: true)
-[14:47:15]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] Styles injected
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
-[14:47:15]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting cursor loop...
-[14:47:15]   [Script] [Multi Purpose Agent] [Loop] cursorLoop STARTED
-[14:47:15]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
-[14:47:15] ✓ PASS: Rapid starts dont corrupt state
-[14:47:15]   [Script] [Multi Purpose Agent] Agent Stopped.
-[14:47:15]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=true, poll=1000
-[14:47:15]   [Script] [Multi Purpose Agent] Starting new session: sid=19
-[14:47:15]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: true, isPro: true)
-[14:47:15]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] Styles injected
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
-[14:47:15]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting cursor loop...
-[14:47:15]   [Script] [Multi Purpose Agent] [Loop] cursorLoop STARTED
-[14:47:15]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
-[14:47:15]   [Script] [Multi Purpose Agent] Agent Stopped.
-[14:47:15]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=true, poll=1000
-[14:47:15]   [Script] [Multi Purpose Agent] Starting new session: sid=20
-[14:47:15]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: true, isPro: true)
-[14:47:15]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] Styles injected
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
-[14:47:15]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting cursor loop...
-[14:47:15]   [Script] [Multi Purpose Agent] [Loop] cursorLoop STARTED
-[14:47:15]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
-[14:47:15]   [Script] [Multi Purpose Agent] Agent Stopped.
-[14:47:15] ✓ PASS: Session ID always increments - 19 -> 20
-[14:47:15]   [Script] [Multi Purpose Agent] Agent Stopped.
-[14:47:15]   [Script] [Multi Purpose Agent] Agent Stopped.
-[14:47:15] ✓ PASS: Stop without prior start is safe
-[14:47:15]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=true, poll=1000
-[14:47:15]   [Script] [Multi Purpose Agent] Starting new session: sid=21
-[14:47:15]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: true, isPro: true)
-[14:47:15]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] Styles injected
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
-[14:47:15]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting cursor loop...
-[14:47:15]   [Script] [Multi Purpose Agent] [Loop] cursorLoop STARTED
-[14:47:15]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
-[14:47:15]   [Script] [Multi Purpose Agent] Agent Stopped.
-[14:47:15]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=true, poll=1000
-[14:47:15]   [Script] [Multi Purpose Agent] Starting new session: sid=22
-[14:47:15]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: true, isPro: true)
-[14:47:15]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] Styles injected
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
-[14:47:15]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting cursor loop...
-[14:47:15]   [Script] [Multi Purpose Agent] [Loop] cursorLoop STARTED
-[14:47:15]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
-[14:47:15] ✓ PASS: Start-stop-start cycle works
-[14:47:15]   [Script] [Multi Purpose Agent] Agent Stopped.
-[14:47:15]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=true, poll=1000
-[14:47:15]   [Script] [Multi Purpose Agent] Starting new session: sid=23
-[14:47:15]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: true, isPro: true)
-[14:47:15]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] Styles injected
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
-[14:47:15]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
-[14:47:15]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting cursor loop...
-[14:47:15]   [Script] [Multi Purpose Agent] [Loop] cursorLoop STARTED
-[14:47:15]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
-[14:47:15] ✓ PASS: Missing isPro handled
-[14:47:15]   [Script] [Multi Purpose Agent] Agent Stopped.
-[14:47:15]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=false, poll=1000
-[14:47:15]   [Script] [Multi Purpose Agent] Starting new session: sid=24
-[14:47:15]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: false, isPro: true)
-[14:47:15]   [Script] [Multi Purpose Agent] Starting static poll loop with interval 1000ms...
-[14:47:15] ✓ PASS: Missing pollInterval handled
-[14:47:15]   [Script] [Multi Purpose Agent] Agent Stopped.
-[14:47:15] ✓ PASS: Has completion state update logic
-[14:47:15] ✓ PASS: Has time suffix regex
-[14:47:15] ✓ PASS: Has deduplicateNames function
-[14:47:15] ✓ PASS: Handles duplicate tab names
-[14:47:15] ✓ PASS: Uses proper MouseEvent dispatch
-[14:47:15] ✓ PASS: Loops use async/await correctly
-[14:47:15] ✓ PASS: Has initialization log message
-[14:47:15] 
-[14:47:15] ============================================================
-[14:47:15]   SUMMARY
-[14:47:15] ============================================================
-[14:47:15] 
-[14:47:15] Total Tests: 72
-[14:47:15] Passed: 72
-[14:47:15] Failed: 0
-[14:47:15] Pass Rate: 100.0%
-[14:47:15] 
-[14:47:15] 🎉 ALL TESTS PASSED - READY TO SHIP!
-[14:47:15] 
-[14:47:15] Test completed at: 2025-12-29T14:47:15.469Z
-[14:47:15] Log file: C:\Users\rulfe\GitHub\auto-accept-agent\background_mode_test_results.log
+[20:27:10] 
+[20:27:10] ============================================================
+[20:27:10]   1. SCRIPT LOADING & SYNTAX
+[20:27:10] ============================================================
+[20:27:10] ✓ PASS: Script file exists - C:\Users\rulfe\GitHub\auto-accept-agent\main_scripts\full_cdp_script.js
+[20:27:10] ✓ PASS: Script syntax is valid
+[20:27:10] ✓ PASS: Script length reasonable - 64681 bytes
+[20:27:10] ✓ PASS: Script contains IIFE wrapper
+[20:27:10] ✓ PASS: Script uses strict mode
+[20:27:10] 
+[20:27:10] ============================================================
+[20:27:10]   2. SANDBOX EXECUTION
+[20:27:10] ============================================================
+[20:27:10]   [Script] [Multi Purpose Agent] [Analytics] State initialized
+[20:27:10]   [Script] [Multi Purpose Agent] [Focus] Initialized (awaiting extension sync)
+[20:27:10]   [Script] [Multi Purpose Agent] [Analytics] Initialized
+[20:27:10]   [Script] [Multi Purpose Agent] Core Bundle Initialized.
+[20:27:10] ✓ PASS: Script executes without error
+[20:27:10] 
+[20:27:10] ============================================================
+[20:27:10]   3. API EXPOSURE
+[20:27:10] ============================================================
+[20:27:10] ✓ PASS: __autoAcceptStart is a function
+[20:27:10] ✓ PASS: __autoAcceptStop is a function
+[20:27:10] ✓ PASS: __autoAcceptState is initialized
+[20:27:10] ✓ PASS: State has all required properties - ["isRunning","tabNames","completionStatus","sessionID","currentMode","isBackgroundMode","lastPollInterval","startTimes","bannedCommands","isPro","stats"]
+[20:27:10] ✓ PASS: Initial state values correct
+[20:27:10] 
+[20:27:10] ============================================================
+[20:27:10]   4. BACKGROUND MODE - CURSOR
+[20:27:10] ============================================================
+[20:27:10]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=true, poll=1000
+[20:27:10]   [Script] [Multi Purpose Agent] Starting new session: sid=1
+[20:27:10]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: true, isPro: true)
+[20:27:10]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] Styles injected
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
+[20:27:10]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting cursor loop...
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] cursorLoop STARTED
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [performClick] Found 0 candidate elements from selectors: button, div[role="button"], [aria-label*="Accept"], [aria-label*="Run"], [title*="Accept"], [title*="Run"], [class*="button"], [class*="anysphere"]
+[20:27:10] ✓ PASS: Start background mode (Cursor) - isRunning=true
+[20:27:10] ✓ PASS: Session ID incremented - sessionID=1
+[20:27:10] ✓ PASS: Current mode set to cursor - currentMode=cursor
+[20:27:10] ✓ PASS: isBackgroundMode flag set
+[20:27:10]   [Script] [Multi Purpose Agent] Agent Stopped.
+[20:27:10] ✓ PASS: Stop background mode - isRunning=false
+[20:27:10] 
+[20:27:10] ============================================================
+[20:27:10]   5. BACKGROUND MODE - ANTIGRAVITY
+[20:27:10] ============================================================
+[20:27:10]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=antigravity, isPro=true, isBG=true, poll=1000
+[20:27:10]   [Script] [Multi Purpose Agent] Starting new session: sid=2
+[20:27:10]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: antigravity, BG: true, isPro: true)
+[20:27:10]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] Styles injected
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
+[20:27:10]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting antigravity loop...
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] antigravityLoop STARTED
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
+[20:27:10]   [Script] [Multi Purpose Agent] [DOM DUMP] Found 0 button-like elements on page
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Antigravity: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Found 1 interaction roots
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Antigravity: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Found 0 Good/Bad badges, 0 total spans
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Antigravity: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Antigravity: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Antigravity: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Antigravity: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Antigravity: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Antigravity: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Antigravity: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Antigravity: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [performClick] Found 0 candidate elements from selectors: .bg-ide-button-background, button, div[role="button"], [aria-label*="Accept"], [aria-label*="Run"], [title*="Accept"], [title*="Run"], [class*="button"]
+[20:27:10] ✓ PASS: Start background mode (Antigravity)
+[20:27:10]   [Script] [Multi Purpose Agent] Agent Stopped.
+[20:27:10] 
+[20:27:10] ============================================================
+[20:27:10]   6. NON-BACKGROUND (SIMPLE) MODE
+[20:27:10] ============================================================
+[20:27:10]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=false, isBG=false, poll=500
+[20:27:10]   [Script] [Multi Purpose Agent] Starting new session: sid=3
+[20:27:10]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: false, isPro: false)
+[20:27:10]   [Script] [Multi Purpose Agent] Starting static poll loop with interval 500ms...
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [performClick] Found 0 candidate elements from selectors: button, div[role="button"], [class*="button"], [class*="anysphere"]
+[20:27:10] ✓ PASS: Start simple mode
+[20:27:10] ✓ PASS: Simple mode isBackgroundMode=false
+[20:27:10]   [Script] [Multi Purpose Agent] Agent Stopped.
+[20:27:10] 
+[20:27:10] ============================================================
+[20:27:10]   7. MODE SWITCHING
+[20:27:10] ============================================================
+[20:27:10]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=false, isBG=false, poll=1000
+[20:27:10]   [Script] [Multi Purpose Agent] Starting new session: sid=4
+[20:27:10]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: false, isPro: false)
+[20:27:10]   [Script] [Multi Purpose Agent] Starting static poll loop with interval 1000ms...
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [performClick] Found 0 candidate elements from selectors: button, div[role="button"], [class*="button"], [class*="anysphere"]
+[20:27:10]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=true, poll=1000
+[20:27:10]   [Script] [Multi Purpose Agent] Stopping previous session to switch modes...
+[20:27:10]   [Script] [Multi Purpose Agent] Starting new session: sid=5
+[20:27:10]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: true, isPro: true)
+[20:27:10]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] Styles injected
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
+[20:27:10]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting cursor loop...
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] cursorLoop STARTED
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [performClick] Found 0 candidate elements from selectors: button, div[role="button"], [aria-label*="Accept"], [aria-label*="Run"], [title*="Accept"], [title*="Run"], [class*="button"], [class*="anysphere"]
+[20:27:10] ✓ PASS: Mode switch increments session - 4 -> 5
+[20:27:10]   [Script] [Multi Purpose Agent] Agent Stopped.
+[20:27:10]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=true, poll=1000
+[20:27:10]   [Script] [Multi Purpose Agent] Starting new session: sid=6
+[20:27:10]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: true, isPro: true)
+[20:27:10]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] Styles injected
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
+[20:27:10]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting cursor loop...
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] cursorLoop STARTED
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [performClick] Found 0 candidate elements from selectors: button, div[role="button"], [aria-label*="Accept"], [aria-label*="Run"], [title*="Accept"], [title*="Run"], [class*="button"], [class*="anysphere"]
+[20:27:10]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=antigravity, isPro=true, isBG=true, poll=1000
+[20:27:10]   [Script] [Multi Purpose Agent] Stopping previous session to switch modes...
+[20:27:10]   [Script] [Multi Purpose Agent] Starting new session: sid=7
+[20:27:10]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: antigravity, BG: true, isPro: true)
+[20:27:10]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
+[20:27:10]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting antigravity loop...
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] antigravityLoop STARTED
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
+[20:27:10]   [Script] [Multi Purpose Agent] [DOM DUMP] Found 0 button-like elements on page
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Antigravity: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Found 1 interaction roots
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Antigravity: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Found 0 Good/Bad badges, 0 total spans
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Antigravity: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Antigravity: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Antigravity: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Antigravity: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Antigravity: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Antigravity: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Antigravity: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Antigravity: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [performClick] Found 0 candidate elements from selectors: .bg-ide-button-background, button, div[role="button"], [aria-label*="Accept"], [aria-label*="Run"], [title*="Accept"], [title*="Run"], [class*="button"]
+[20:27:10] ✓ PASS: IDE switch increments session - cursor -> antigravity
+[20:27:10]   [Script] [Multi Purpose Agent] Agent Stopped.
+[20:27:10] 
+[20:27:10] ============================================================
+[20:27:10]   8. IDEMPOTENCY
+[20:27:10] ============================================================
+[20:27:10]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=true, poll=1000
+[20:27:10]   [Script] [Multi Purpose Agent] Starting new session: sid=8
+[20:27:10]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: true, isPro: true)
+[20:27:10]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] Styles injected
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
+[20:27:10]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting cursor loop...
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] cursorLoop STARTED
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [performClick] Found 0 candidate elements from selectors: button, div[role="button"], [aria-label*="Accept"], [aria-label*="Run"], [title*="Accept"], [title*="Run"], [class*="button"], [class*="anysphere"]
+[20:27:10]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=true, poll=1000
+[20:27:10]   [Script] [Multi Purpose Agent] Already running with same config, skipping restart
+[20:27:10] ✓ PASS: Same config is idempotent - sid stayed at 8
+[20:27:10]   [Script] [Multi Purpose Agent] Agent Stopped.
+[20:27:10]   [Script] [Multi Purpose Agent] Agent Stopped.
+[20:27:10]   [Script] [Multi Purpose Agent] Agent Stopped.
+[20:27:10]   [Script] [Multi Purpose Agent] Agent Stopped.
+[20:27:10] ✓ PASS: Multiple stops are safe
+[20:27:10] 
+[20:27:10] ============================================================
+[20:27:10]   9. EDGE CASES - CONFIG HANDLING
+[20:27:10] ============================================================
+[20:27:10]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=false, poll=1000
+[20:27:10]   [Script] [Multi Purpose Agent] Starting new session: sid=9
+[20:27:10]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: false, isPro: true)
+[20:27:10]   [Script] [Multi Purpose Agent] Starting static poll loop with interval 1000ms...
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [performClick] Found 0 candidate elements from selectors: button, div[role="button"], [class*="button"], [class*="anysphere"]
+[20:27:10] ✓ PASS: Empty config handled
+[20:27:10]   [Script] [Multi Purpose Agent] Agent Stopped.
+[20:27:10]   [Script] [Multi Purpose Agent] ERROR in __autoAcceptStart: Cannot read properties of undefined (reading 'ide')
+[20:27:10]   [Script ERROR] [Multi Purpose Agent] Start error: TypeError: Cannot read properties of undefined (reading 'ide')
+[20:27:10] ✓ PASS: Undefined config handled gracefully - Script did not crash
+[20:27:10]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=true, poll=1000
+[20:27:10]   [Script] [Multi Purpose Agent] Starting new session: sid=10
+[20:27:10]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: true, isPro: true)
+[20:27:10]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] Styles injected
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
+[20:27:10]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting cursor loop...
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] cursorLoop STARTED
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [performClick] Found 0 candidate elements from selectors: button, div[role="button"], [aria-label*="Accept"], [aria-label*="Run"], [title*="Accept"], [title*="Run"], [class*="button"], [class*="anysphere"]
+[20:27:10] ✓ PASS: Null IDE handled
+[20:27:10]   [Script] [Multi Purpose Agent] Agent Stopped.
+[20:27:10]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=unknown_ide, isPro=true, isBG=true, poll=1000
+[20:27:10]   [Script] [Multi Purpose Agent] Starting new session: sid=11
+[20:27:10]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: unknown_ide, BG: true, isPro: true)
+[20:27:10]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] Styles injected
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
+[20:27:10]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting unknown_ide loop...
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] antigravityLoop STARTED
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
+[20:27:10]   [Script] [Multi Purpose Agent] [DOM DUMP] Found 0 button-like elements on page
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Found 1 interaction roots
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Found 0 Good/Bad badges, 0 total spans
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [performClick] Found 0 candidate elements from selectors: .bg-ide-button-background, button, div[role="button"], [aria-label*="Accept"], [aria-label*="Run"], [title*="Accept"], [title*="Run"], [class*="button"]
+[20:27:10] ✓ PASS: Unknown IDE handled gracefully
+[20:27:10]   [Script] [Multi Purpose Agent] Agent Stopped.
+[20:27:10]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=true, poll=1000
+[20:27:10]   [Script] [Multi Purpose Agent] Starting new session: sid=12
+[20:27:10]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: true, isPro: true)
+[20:27:10]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] Styles injected
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
+[20:27:10]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting cursor loop...
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] cursorLoop STARTED
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [performClick] Found 0 candidate elements from selectors: button, div[role="button"], [aria-label*="Accept"], [aria-label*="Run"], [title*="Accept"], [title*="Run"], [class*="button"], [class*="anysphere"]
+[20:27:10] ✓ PASS: IDE name case insensitive
+[20:27:10]   [Script] [Multi Purpose Agent] Agent Stopped.
+[20:27:10] 
+[20:27:10] ============================================================
+[20:27:10]   10. EDGE CASES - FREE TIER
+[20:27:10] ============================================================
+[20:27:10]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=false, isBG=true, poll=1000
+[20:27:10]   [Script] [Multi Purpose Agent] Starting new session: sid=13
+[20:27:10]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: true, isPro: false)
+[20:27:10]   [Script] [Multi Purpose Agent] [BG] Background mode requires Pro, showing overlay anyway...
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] Styles injected
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] cursorLoop STARTED
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [performClick] Found 0 candidate elements from selectors: button, div[role="button"], [aria-label*="Accept"], [aria-label*="Run"], [title*="Accept"], [title*="Run"], [class*="button"], [class*="anysphere"]
+[20:27:10] ✓ PASS: Free tier + background mode works
+[20:27:10]   [Script] [Multi Purpose Agent] Agent Stopped.
+[20:27:10] 
+[20:27:10] ============================================================
+[20:27:10]   11. SCRIPT CONTENT CHECKS
+[20:27:10] ============================================================
+[20:27:10] ✓ PASS: No direct innerHTML assignments - Found 0 occurrences
+[20:27:10] ✓ PASS: No TrustedTypes createPolicy calls
+[20:27:10] ✓ PASS: Uses pure DOM construction
+[20:27:10] ✓ PASS: No eval or Function constructor
+[20:27:10] ✓ PASS: No document.write
+[20:27:10] ✓ PASS: No window.open
+[20:27:10] 
+[20:27:10] ============================================================
+[20:27:10]   12. OVERLAY LOGIC
+[20:27:10] ============================================================
+[20:27:10] ✓ PASS: Overlay ID constant defined
+[20:27:10] ✓ PASS: showOverlay function exists
+[20:27:10] ✓ PASS: updateOverlay function exists
+[20:27:10] ✓ PASS: hideOverlay function exists
+[20:27:10] ✓ PASS: Overlay styles defined
+[20:27:10] 
+[20:27:10] ============================================================
+[20:27:10]   13. LOOP LOGIC
+[20:27:10] ============================================================
+[20:27:10] ✓ PASS: cursorLoop function exists
+[20:27:10] ✓ PASS: antigravityLoop function exists
+[20:27:10] ✓ PASS: performClick function exists
+[20:27:10] ✓ PASS: isAcceptButton function exists
+[20:27:10] ✓ PASS: Loops check session ID
+[20:27:10] ✓ PASS: Loops check isRunning flag
+[20:27:10] 
+[20:27:10] ============================================================
+[20:27:10]   14. BUTTON DETECTION LOGIC
+[20:27:10] ============================================================
+[20:27:10] ✓ PASS: Accept pattern defined
+[20:27:10] ✓ PASS: Run pattern defined
+[20:27:10] ✓ PASS: Reject patterns defined
+[20:27:10] ✓ PASS: Button visibility checked
+[20:27:10] 
+[20:27:10] ============================================================
+[20:27:10]   15. UTILS FUNCTIONS
+[20:27:10] ============================================================
+[20:27:10] ✓ PASS: getDocuments function exists
+[20:27:10] ✓ PASS: queryAll function exists
+[20:27:10] ✓ PASS: updateTabNames function exists
+[20:27:10] ✓ PASS: stripTimeSuffix function exists
+[20:27:10] 
+[20:27:10] ============================================================
+[20:27:10]   16. BROWSER CONTEXT GUARD
+[20:27:10] ============================================================
+[20:27:10] ✓ PASS: Window undefined guard exists
+[20:27:10] 
+[20:27:10] ============================================================
+[20:27:10]   17. ADVANCED EDGE CASES
+[20:27:10] ============================================================
+[20:27:10]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=true, poll=1000
+[20:27:10]   [Script] [Multi Purpose Agent] Starting new session: sid=14
+[20:27:10]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: true, isPro: true)
+[20:27:10]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] Styles injected
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
+[20:27:10]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting cursor loop...
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] cursorLoop STARTED
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [performClick] Found 0 candidate elements from selectors: button, div[role="button"], [aria-label*="Accept"], [aria-label*="Run"], [title*="Accept"], [title*="Run"], [class*="button"], [class*="anysphere"]
+[20:27:10]   [Script] [Multi Purpose Agent] [Focus] Initialized (awaiting extension sync)
+[20:27:10]   [Script] [Multi Purpose Agent] [Analytics] Initialized
+[20:27:10]   [Script] [Multi Purpose Agent] Core Bundle Initialized.
+[20:27:10] ✓ PASS: State preserved on re-injection - 14 -> 14
+[20:27:10]   [Script] [Multi Purpose Agent] Agent Stopped.
+[20:27:10] ✓ PASS: tabNames is always an array
+[20:27:10] ✓ PASS: completionStatus is always an object
+[20:27:10] ✓ PASS: startTimes is always an object
+[20:27:10]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=true, poll=1000
+[20:27:10]   [Script] [Multi Purpose Agent] Starting new session: sid=15
+[20:27:10]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: true, isPro: true)
+[20:27:10]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] Styles injected
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
+[20:27:10]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting cursor loop...
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] cursorLoop STARTED
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [performClick] Found 0 candidate elements from selectors: button, div[role="button"], [aria-label*="Accept"], [aria-label*="Run"], [title*="Accept"], [title*="Run"], [class*="button"], [class*="anysphere"]
+[20:27:10]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=antigravity, isPro=true, isBG=true, poll=1000
+[20:27:10]   [Script] [Multi Purpose Agent] Stopping previous session to switch modes...
+[20:27:10]   [Script] [Multi Purpose Agent] Starting new session: sid=16
+[20:27:10]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: antigravity, BG: true, isPro: true)
+[20:27:10]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
+[20:27:10]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting antigravity loop...
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] antigravityLoop STARTED
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
+[20:27:10]   [Script] [Multi Purpose Agent] [DOM DUMP] Found 0 button-like elements on page
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Antigravity: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Found 1 interaction roots
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Antigravity: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Found 0 Good/Bad badges, 0 total spans
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Antigravity: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Antigravity: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Antigravity: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Antigravity: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Antigravity: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Antigravity: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Antigravity: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Antigravity: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [performClick] Found 0 candidate elements from selectors: .bg-ide-button-background, button, div[role="button"], [aria-label*="Accept"], [aria-label*="Run"], [title*="Accept"], [title*="Run"], [class*="button"]
+[20:27:10]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=false, isBG=false, poll=1000
+[20:27:10]   [Script] [Multi Purpose Agent] Stopping previous session to switch modes...
+[20:27:10]   [Script] [Multi Purpose Agent] Starting new session: sid=17
+[20:27:10]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: false, isPro: false)
+[20:27:10]   [Script] [Multi Purpose Agent] Starting static poll loop with interval 1000ms...
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [performClick] Found 0 candidate elements from selectors: button, div[role="button"], [class*="button"], [class*="anysphere"]
+[20:27:10]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=true, poll=1000
+[20:27:10]   [Script] [Multi Purpose Agent] Stopping previous session to switch modes...
+[20:27:10]   [Script] [Multi Purpose Agent] Starting new session: sid=18
+[20:27:10]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: true, isPro: true)
+[20:27:10]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] Styles injected
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
+[20:27:10]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting cursor loop...
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] cursorLoop STARTED
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [performClick] Found 0 candidate elements from selectors: button, div[role="button"], [aria-label*="Accept"], [aria-label*="Run"], [title*="Accept"], [title*="Run"], [class*="button"], [class*="anysphere"]
+[20:27:10] ✓ PASS: Rapid starts dont corrupt state
+[20:27:10]   [Script] [Multi Purpose Agent] Agent Stopped.
+[20:27:10]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=true, poll=1000
+[20:27:10]   [Script] [Multi Purpose Agent] Starting new session: sid=19
+[20:27:10]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: true, isPro: true)
+[20:27:10]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] Styles injected
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
+[20:27:10]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting cursor loop...
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] cursorLoop STARTED
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [performClick] Found 0 candidate elements from selectors: button, div[role="button"], [aria-label*="Accept"], [aria-label*="Run"], [title*="Accept"], [title*="Run"], [class*="button"], [class*="anysphere"]
+[20:27:10]   [Script] [Multi Purpose Agent] Agent Stopped.
+[20:27:10]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=true, poll=1000
+[20:27:10]   [Script] [Multi Purpose Agent] Starting new session: sid=20
+[20:27:10]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: true, isPro: true)
+[20:27:10]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] Styles injected
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
+[20:27:10]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting cursor loop...
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] cursorLoop STARTED
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [performClick] Found 0 candidate elements from selectors: button, div[role="button"], [aria-label*="Accept"], [aria-label*="Run"], [title*="Accept"], [title*="Run"], [class*="button"], [class*="anysphere"]
+[20:27:10]   [Script] [Multi Purpose Agent] Agent Stopped.
+[20:27:10] ✓ PASS: Session ID always increments - 19 -> 20
+[20:27:10]   [Script] [Multi Purpose Agent] Agent Stopped.
+[20:27:10]   [Script] [Multi Purpose Agent] Agent Stopped.
+[20:27:10] ✓ PASS: Stop without prior start is safe
+[20:27:10]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=true, poll=1000
+[20:27:10]   [Script] [Multi Purpose Agent] Starting new session: sid=21
+[20:27:10]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: true, isPro: true)
+[20:27:10]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] Styles injected
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
+[20:27:10]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting cursor loop...
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] cursorLoop STARTED
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [performClick] Found 0 candidate elements from selectors: button, div[role="button"], [aria-label*="Accept"], [aria-label*="Run"], [title*="Accept"], [title*="Run"], [class*="button"], [class*="anysphere"]
+[20:27:10]   [Script] [Multi Purpose Agent] Agent Stopped.
+[20:27:10]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=true, poll=1000
+[20:27:10]   [Script] [Multi Purpose Agent] Starting new session: sid=22
+[20:27:10]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: true, isPro: true)
+[20:27:10]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] Styles injected
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
+[20:27:10]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting cursor loop...
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] cursorLoop STARTED
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [performClick] Found 0 candidate elements from selectors: button, div[role="button"], [aria-label*="Accept"], [aria-label*="Run"], [title*="Accept"], [title*="Run"], [class*="button"], [class*="anysphere"]
+[20:27:10] ✓ PASS: Start-stop-start cycle works
+[20:27:10]   [Script] [Multi Purpose Agent] Agent Stopped.
+[20:27:10]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=true, poll=1000
+[20:27:10]   [Script] [Multi Purpose Agent] Starting new session: sid=23
+[20:27:10]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: true, isPro: true)
+[20:27:10]   [Script] [Multi Purpose Agent] [BG] Creating overlay and starting loop...
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] Creating overlay...
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] Styles injected
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] Overlay appended to body
+[20:27:10]   [Script] [Multi Purpose Agent] [Overlay] No panel found, skipping overlay creation
+[20:27:10]   [Script] [Multi Purpose Agent] [BG] Overlay created, starting cursor loop...
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] cursorLoop STARTED
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Starting...
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [performClick] Found 0 candidate elements from selectors: button, div[role="button"], [aria-label*="Accept"], [aria-label*="Run"], [title*="Accept"], [title*="Run"], [class*="button"], [class*="anysphere"]
+[20:27:10] ✓ PASS: Missing isPro handled
+[20:27:10]   [Script] [Multi Purpose Agent] Agent Stopped.
+[20:27:10]   [Script] [Multi Purpose Agent] __autoAcceptStart called: ide=cursor, isPro=true, isBG=false, poll=1000
+[20:27:10]   [Script] [Multi Purpose Agent] Starting new session: sid=24
+[20:27:10]   [Script] [Multi Purpose Agent] Agent Loaded (IDE: cursor, BG: false, isPro: true)
+[20:27:10]   [Script] [Multi Purpose Agent] Starting static poll loop with interval 1000ms...
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [InteractionRoots] Cursor: No specific container found, using document.body
+[20:27:10]   [Script] [Multi Purpose Agent] [performClick] Found 0 candidate elements from selectors: button, div[role="button"], [class*="button"], [class*="anysphere"]
+[20:27:10] ✓ PASS: Missing pollInterval handled
+[20:27:10]   [Script] [Multi Purpose Agent] Agent Stopped.
+[20:27:10] ✓ PASS: Has completion state update logic
+[20:27:10] ✓ PASS: Has time suffix regex
+[20:27:10] ✓ PASS: Has deduplicateNames function
+[20:27:10] ✓ PASS: Handles duplicate tab names
+[20:27:10] ✓ PASS: Uses proper MouseEvent dispatch
+[20:27:10] ✓ PASS: Loops use async/await correctly
+[20:27:10] ✓ PASS: Has initialization log message
+[20:27:10] 
+[20:27:10] ============================================================
+[20:27:10]   SUMMARY
+[20:27:10] ============================================================
+[20:27:10] 
+[20:27:10] Total Tests: 72
+[20:27:10] Passed: 72
+[20:27:10] Failed: 0
+[20:27:10] Pass Rate: 100.0%
+[20:27:10] 
+[20:27:10] 🎉 ALL TESTS PASSED - READY TO SHIP!
+[20:27:10] 
+[20:27:10] Test completed at: 2025-12-29T20:27:10.940Z
+[20:27:10] Log file: C:\Users\rulfe\GitHub\auto-accept-agent\background_mode_test_results.log
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Clicked 0 buttons
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Clicked 0 accept buttons
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Clicked 0 buttons
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Clicked 0 buttons
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Clicked 0 accept buttons
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Clicked 0 buttons
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Clicked 0 buttons
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Clicked 0 accept buttons
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Clicked 0 buttons
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Clicked 0 buttons
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Clicked 0 buttons
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Clicked 0 buttons
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Clicked 0 accept buttons
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Clicked 0 buttons
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Clicked 0 buttons
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Clicked 0 buttons
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Clicked 0 buttons
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Clicked 0 buttons
+[20:27:10]   [Script] [Multi Purpose Agent] [Loop] Cycle 1: Clicked 0 buttons

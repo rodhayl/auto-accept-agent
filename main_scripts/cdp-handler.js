@@ -74,7 +74,7 @@ class CDPHandler {
         });
     }
 
-    async start(config) {
+    async start(config, forceReinject = false) {
         this.isEnabled = true;
         const instances = await this.scanForInstances();
 
@@ -95,8 +95,17 @@ class CDPHandler {
                     await this.connectToPage(page);
                 }
                 if (this.connections.has(page.id)) {
-                    await this.injectAndStart(page.id, config);
+                    await this.injectAndStart(page.id, config, forceReinject);
                 }
+            }
+        }
+    }
+
+    async forceReinjectAll(config) {
+        this.log('Force re-injecting script on all connected pages...');
+        for (const [pageId, conn] of this.connections) {
+            if (conn.injected) {
+                await this.injectAndStart(pageId, config, true);
             }
         }
     }
@@ -174,13 +183,22 @@ class CDPHandler {
         });
     }
 
-    async injectAndStart(pageId, config) {
+    async injectAndStart(pageId, config, forceReinject = false) {
         const conn = this.connections.get(pageId);
         if (!conn) return;
 
         try {
-            // 1. Inject core bundle only once
-            if (!conn.injected) {
+            // 1. Inject core bundle (with option to force re-inject)
+            if (!conn.injected || forceReinject) {
+                // Stop any existing script first
+                if (conn.injected) {
+                    await this.sendCommand(pageId, 'Runtime.evaluate', {
+                        expression: 'if(typeof window !== "undefined" && window.__autoAcceptStop) window.__autoAcceptStop()'
+                    }).catch(() => { });
+                    // Small delay to let it stop
+                    await new Promise(r => setTimeout(r, 200));
+                }
+                
                 const script = this.getComposedScript();
                 const result = await this.sendCommand(pageId, 'Runtime.evaluate', {
                     expression: script,
@@ -189,7 +207,7 @@ class CDPHandler {
                 });
 
                 if (result.exceptionDetails) {
-                    this.log(`Injection Exception on ${pageId}: ${result.exceptionDetails.text} ${result.exceptionDetails.exception.description}`);
+                    this.log(`Injection Exception on ${pageId}: ${result.exceptionDetails.text} ${result.exceptionDetails.exception?.description || ''}`);
                 } else {
                     const verify = await this.sendCommand(pageId, 'Runtime.evaluate', {
                         expression: '(function(){ return (typeof window !== "undefined") && (typeof window.__autoAcceptStart === "function"); })()',
@@ -198,7 +216,7 @@ class CDPHandler {
 
                     if (verify?.result?.value === true) {
                         conn.injected = true;
-                        this.log(`Injected core onto ${pageId}`);
+                        this.log(`Injected core onto ${pageId}${forceReinject ? ' (forced re-inject)' : ''}`);
                     } else {
                         this.log(`Injection verification failed on ${pageId}`);
                         conn.injected = false;
@@ -444,8 +462,46 @@ class CDPHandler {
         if (deniedSubstrings.some(s => lowered.includes(s))) return false;
 
         const title = String(page.title || '').toLowerCase();
-        const allowHints = ['vscode-webview', 'workbench', 'cursor', 'anysphere', 'antigravity'];
-        return allowHints.some(h => lowered.includes(h) || title.includes(h));
+        
+        // Prioritize main workbench page (with workbench.html in URL)
+        // This is the page that actually contains buttons
+        if (lowered.includes('workbench.html') || lowered.includes('workbench/workbench')) {
+            return true; // Always attach to main workbench - it has the actual UI
+        }
+        
+        // For Antigravity: The main page shows as "ProjectName - Antigravity" 
+        // This is different from "Launchpad" which is just an empty shell
+        if (title.includes('antigravity') && !title.includes('launchpad')) {
+            return true; // Main Antigravity window
+        }
+        
+        // Exclude standalone settings/welcome pages (vscode-webview ones)
+        // But NOT the main workbench that happens to have a settings tab open
+        const isWebview = lowered.includes('vscode-webview://');
+        const denyPatterns = ['welcome', 'walkthrough', 'release notes', 'getting started'];
+        if (denyPatterns.some(p => title.includes(p) || lowered.includes(p))) return false;
+        
+        // Deny webview pages that are just settings/extension panels
+        if (isWebview && (title.includes('settings') || lowered.includes('extensionid='))) {
+            return false;
+        }
+
+        // Allow pages that match IDE patterns (Cursor, etc.)
+        const allowHints = ['workbench', 'cursor', 'anysphere'];
+        const matchesHint = allowHints.some(h => lowered.includes(h) || title.includes(h));
+        
+        return matchesHint;
+    }
+
+    /**
+     * Count unique agent sessions (not just all CDP connections)
+     * Returns the number of actual chat/agent panels detected
+     */
+    getActiveSessionCount() {
+        // For now, return 1 if we have any injected pages (since we're working on one IDE at a time)
+        // In the future, this could track actual conversation tabs
+        const injected = this.getInjectedCount();
+        return injected > 0 ? 1 : 0;
     }
 
     disconnectAll() {

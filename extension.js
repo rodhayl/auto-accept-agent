@@ -498,7 +498,19 @@ async function handleToggle(context) {
             log('Multi Purpose Agent: Enabled');
             // These operations happen in background with error handling
             ensureCDPOrPrompt(true)
-                .then(() => startPolling())
+                .then(() => {
+                    // Force re-inject on toggle to pick up any code changes
+                    if (cdpHandler) {
+                        return cdpHandler.forceReinjectAll({
+                            isPro,
+                            isBackgroundMode: backgroundModeEnabled,
+                            pollInterval: pollFrequency,
+                            ide: currentIDE,
+                            bannedCommands: bannedCommands
+                        }).then(() => startPolling());
+                    }
+                    return startPolling();
+                })
                 .catch(err => log(`Error starting polling: ${err.message}`));
             startStatsCollection(context);
             incrementSessionCount(context);
