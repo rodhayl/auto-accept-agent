@@ -209,6 +209,15 @@ class SettingsPanel {
         });
     }
 
+    sendQueueUpdate(data) {
+        this.panel.webview.postMessage({
+            command: 'updateQueue',
+            queue: data.queue,
+            current: data.current,
+            isProcessing: data.isProcessing
+        });
+    }
+
     getLogFilePath() {
         return path.join(this.context.extensionPath, 'multi-purpose-agent-cdp.log');
     }
@@ -289,6 +298,7 @@ class SettingsPanel {
             this.sendSchedule();
             this.sendBackgroundMode();
             this.sendLogs(300);
+            vscode.commands.executeCommand('multi-purpose-agent.getQueueStatus');
         }, 100);
     }
 
@@ -518,6 +528,45 @@ class SettingsPanel {
             .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 2px; bottom: 2px; background-color: white; transition: .4s; border-radius: 50%; }
             input:checked + .slider { background-color: var(--accent); }
             input:checked + .slider:before { transform: translateX(20px); }
+
+            /* Queue Styles */
+            .queue-list {
+                margin-top: 12px;
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                background: rgba(0,0,0,0.2);
+                max-height: 200px;
+                overflow-y: auto;
+            }
+            .queue-item {
+                padding: 8px 12px;
+                border-bottom: 1px solid var(--border);
+                font-size: 12px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+            .queue-item:last-child { border-bottom: none; }
+            .queue-item.pending { border-left: 3px solid var(--fg-dim); }
+            .queue-item.sending { border-left: 3px solid var(--accent); background: var(--accent-soft); }
+            .queue-item.sent { border-left: 3px solid var(--green); opacity: 0.7; }
+            .queue-status {
+                font-size: 10px;
+                text-transform: uppercase;
+                font-weight: 700;
+                padding: 2px 6px;
+                border-radius: 4px;
+            }
+            .status-pending { color: var(--fg-dim); background: rgba(255,255,255,0.1); }
+            .status-sending { color: var(--accent); background: rgba(147, 51, 234, 0.2); }
+            .status-sent { color: var(--green); background: rgba(34, 197, 94, 0.2); }
+            .empty-queue {
+                padding: 20px;
+                text-align: center;
+                color: var(--fg-dim);
+                font-size: 12px;
+                font-style: italic;
+            }
         `;
 
         // Settings Mode
@@ -619,6 +668,26 @@ class SettingsPanel {
                         </div>
                     </div>
                     ${!isPro ? '<div class="pro-tip">Locked: Pro users can schedule automated prompts</div>' : ''}
+                </div>
+
+                <div class="section">
+                    <div class="section-label">📋 Prompt Queue</div>
+                    <div style="font-size: 13px; opacity: 0.6; margin-bottom: 16px;">
+                        Queue prompts to be sent sequentially. The agent waits for each prompt to complete before sending the next.
+                    </div>
+                    
+                    <div style="margin-bottom: 12px;">
+                        <textarea id="queueInput" style="min-height: 80px;" placeholder="Enter your prompt here..."></textarea>
+                    </div>
+                    
+                    <button id="addToQueueBtn" class="btn-primary" style="width: 100%; margin-bottom: 16px;">
+                        Add to Queue
+                    </button>
+
+                    <div class="section-label" style="margin-bottom: 8px;">Current Queue</div>
+                    <div id="queueList" class="queue-list">
+                        <div class="empty-queue">Queue is empty</div>
+                    </div>
                 </div>
 
                 <div class="section">
@@ -885,6 +954,9 @@ class SettingsPanel {
                             }
                         }
                     }
+                    if (msg.command === 'updateQueue') {
+                        renderQueue(msg.queue, msg.current, msg.isProcessing);
+                    }
                 });
 
                 // Initial load
@@ -892,6 +964,7 @@ class SettingsPanel {
                 vscode.postMessage({ command: 'getBannedCommands' });
                 vscode.postMessage({ command: 'getSchedule' });
                 vscode.postMessage({ command: 'getBackgroundMode' });
+                vscode.postMessage({ command: 'getQueueStatus' });
                 requestLogs();
             </script>
         </body>

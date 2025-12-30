@@ -1500,5 +1500,56 @@
         log("Agent Stopped.");
     };
 
+    // --- Is Busy Check (CDP) ---
+    window.__autoAcceptIsBusy = function () {
+        // Check for "Stop Generating" or "Stop" buttons
+        const stopSelectors = [
+            'button[aria-label*="Stop"]',
+            'button[title*="Stop"]',
+            'div[class*="stop-button"]',
+            '.codicon-stop-circle' // VS Code / Cursor icon class often used
+        ];
+
+        for (const sel of stopSelectors) {
+            const els = queryAll(sel);
+            if (els.some(el => isElementVisible(el))) {
+                log('[IsBusy] Found Stop button -> Busy');
+                return true;
+            }
+        }
+
+        // Check for Send button state
+        const sendSelectors = [
+            'button[aria-label*="Send"]',
+            'button[title*="Send"]',
+            'div[class*="send-button"]'
+        ];
+        
+        // If we find a Send button and it is disabled/loading, we might be busy
+        for (const sel of sendSelectors) {
+            const els = queryAll(sel);
+            const visibleSend = els.find(el => isElementVisible(el));
+            if (visibleSend) {
+                if (visibleSend.disabled || visibleSend.getAttribute('aria-disabled') === 'true') {
+                    // Send button visible but disabled - likely busy generating or empty input
+                    // But if input is empty, it's not "busy" in the sense of generating.
+                    // So this is a weak signal. We rely mostly on Stop button.
+                    // However, some UIs disable Send while generating without showing Stop immediately.
+                    // Let's check if there is content in input.
+                    
+                    // Actually, safer to assume NOT busy if only Send is disabled, 
+                    // because we might just be waiting for user input.
+                    // So we return false here unless we have other signals.
+                } else {
+                    // Send button is visible and enabled -> Definitely IDLE
+                    // log('[IsBusy] Found enabled Send button -> Idle');
+                    return false;
+                }
+            }
+        }
+
+        return false;
+    };
+
     log("Core Bundle Initialized.", true);
 })();

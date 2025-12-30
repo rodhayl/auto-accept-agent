@@ -400,6 +400,23 @@ class CDPHandler {
         return total;
     }
 
+    async isBusy() {
+        // Check if any page reports being busy
+        for (const [pageId] of this.connections) {
+            try {
+                const result = await this.sendCommand(pageId, 'Runtime.evaluate', {
+                    expression: '(function(){ if(typeof window !== "undefined" && window.__autoAcceptIsBusy) return window.__autoAcceptIsBusy(); return false; })()',
+                    returnByValue: true
+                });
+                
+                if (result.result?.value === true) {
+                    return true;
+                }
+            } catch (e) { }
+        }
+        return false;
+    }
+
     async sendPrompt(text) {
         if (!text) return;
         this.log(`Sending prompt to all pages: "${text}"`);

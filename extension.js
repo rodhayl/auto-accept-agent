@@ -1,6 +1,7 @@
 const vscode = require('vscode');
 const path = require('path');
 const fs = require('fs');
+const { PromptQueue } = require('./prompt-queue');
 
 // Lazy load SettingsPanel to avoid blocking activation
 let SettingsPanel = null;
@@ -46,15 +47,15 @@ const STARTUP_SETUP_PROMPT_COOLDOWN_MS = 1000 * 60 * 60 * 24;
 
 // --- Scheduler Class ---
 class Scheduler {
-    constructor(context, cdpHandler, log) {
+    constructor(context, cdpHandler, log, promptQueue) {
         this.context = context;
         this.cdpHandler = cdpHandler;
         this.log = log;
+        this.promptQueue = promptQueue;
         this.timer = null;
         this.lastRunTime = 0;
         this.enabled = false;
         this.config = {};
-        this.promptQueue = Promise.resolve(); // Queue for prompt serialization
     }
 
     start() {
@@ -111,25 +112,15 @@ class Scheduler {
         }
     }
 
-    async queuePrompt(text) {
-        // Chain the new trigger to the end of the queue to ensure serialization
-        this.promptQueue = this.promptQueue.then(async () => {
-            this.lastRunTime = Date.now();
-            if (text && this.cdpHandler) {
-                this.log(`Scheduler: Sending prompt "${text}"`);
-                await this.cdpHandler.sendPrompt(text);
-                vscode.window.showInformationMessage(`Multi Purpose Agent: Scheduled prompt sent.`);
-            }
-        }).catch(err => {
-            this.log(`Scheduler Error: ${err.message}`);
-        });
-
-        return this.promptQueue;
-    }
-
     async trigger() {
         const text = this.config.prompt;
-        return this.queuePrompt(text);
+        if (this.promptQueue) {
+            this.log(`Scheduler: Enqueueing prompt "${text}"`);
+            this.promptQueue.add(text);
+            vscode.window.showInformationMessage(`Multi Purpose Agent: Scheduled prompt added to queue.`);
+        } else {
+            this.log('Scheduler Error: PromptQueue not available');
+        }
     }
 }
 
@@ -309,8 +300,17 @@ async function activate(context) {
             relauncher = new Relauncher(log);
             log(`CDP handlers initialized for ${currentIDE}.`);
 
+            // Initialize PromptQueue
+            promptQueue = new PromptQueue(cdpHandler, log);
+            promptQueue.onQueueChanged((data) => {
+                const panel = getSettingsPanel();
+                if (panel && panel.currentPanel) {
+                    panel.currentPanel.sendQueueUpdate(data);
+                }
+            });
+
             // Initialize Scheduler
-            scheduler = new Scheduler(context, cdpHandler, log);
+            scheduler = new Scheduler(context, cdpHandler, log, promptQueue);
             scheduler.start();
         } catch (err) {
             log(`Failed to initialize CDP handlers: ${err.message}`);
@@ -372,6 +372,19 @@ async function activate(context) {
                     } catch (e) {
                         vscode.window.showErrorMessage(`Reset failed: ${e.message}`);
                     }
+                }
+            }),
+            vscode.commands.registerCommand('multi-purpose-agent.enqueuePrompt', (text) => {
+                if (promptQueue) {
+                    promptQueue.add(text);
+                    vscode.window.showInformationMessage('Prompt added to queue');
+                } else {
+                    vscode.window.showErrorMessage('Prompt Queue not initialized');
+                }
+            }),
+            vscode.commands.registerCommand('multi-purpose-agent.getQueueStatus', () => {
+                if (promptQueue) {
+                    promptQueue.notifyChange();
                 }
             })
         );
