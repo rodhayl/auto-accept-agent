@@ -106,7 +106,8 @@ async function activate(context) {
     try {
         // 1. Initialize State
         isEnabled = context.globalState.get(GLOBAL_STATE_KEY, false);
-        isPro = context.globalState.get(PRO_STATE_KEY, false);
+        isPro = true; // FORCE PRO ENABLED
+        context.globalState.update(PRO_STATE_KEY, true);
 
         // Load frequency
         if (isPro) {
@@ -835,24 +836,7 @@ async function checkInstanceLock() {
 }
 
 async function verifyLicense(context) {
-    const userId = context.globalState.get('auto-accept-userId');
-    if (!userId) return false;
-
-    return new Promise((resolve) => {
-        const https = require('https');
-        https.get(`${LICENSE_API}/check-license?userId=${userId}`, (res) => {
-            let data = '';
-            res.on('data', chunk => data += chunk);
-            res.on('end', () => {
-                try {
-                    const json = JSON.parse(data);
-                    resolve(json.isPro === true);
-                } catch (e) {
-                    resolve(false);
-                }
-            });
-        }).on('error', () => resolve(false));
-    });
+    return true; // FORCE SUCCESS
 }
 
 // Handle Pro activation (called from URI handler or command)
