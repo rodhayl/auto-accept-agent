@@ -1,1 +1,24 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+*.vsix
+
+# Logs
+*.log
+cdp-debug.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+*.swp
+*.swo
+*~
+
+# Environment
 .env
+.env.local

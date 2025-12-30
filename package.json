@@ -22,8 +22,7 @@
         "test": "node test/integration-test.js",
         "compile": "esbuild extension.js --bundle --outfile=dist/extension.js --external:vscode --platform=node --format=cjs",
         "vscode:prepublish": "npm run compile",
-        "package": "npx vsce package",
-        "postinstall": "node ./node_modules/vscode/bin/install"
+        "package": "npx vsce package"
     },
     "engines": {
         "vscode": "^1.75.0"
